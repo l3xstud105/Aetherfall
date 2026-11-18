@@ -1,39 +1,91 @@
-# AETHERFALL — A Tale of Broken Skies
-### A L3X STUD10'5 PRODUCTION
+# AETHERFALL 0.9 — A Tale of Broken Skies
+**L3X STUD105** · browser-first 3D third-person open-world fantasy RPG (Three.js + React + WebAudio + PeerJS)
 
-Browser-based 2.5D/3D fantasy action-adventure RPG (Three.js + React + Vite + Tailwind).
+Play: `npm install && npm run build`, then open `dist/index.html` (single self-contained file). Dev: `npm run dev`.
 
-## What this project is
-The recovered original game (React + Three.js, ~320 KB of minified game code) has been **preserved, not rewritten**:
+---
+## 🌟 What's New in Version 0.9
 
-| Path | Purpose |
-|---|---|
-| `legacy-backup/aetherfall-original.html` | Byte-for-byte copy of the recovered original build (safety backup) |
-| `src/legacy/aetherfall.legacy.js` | The original engine, prettified into readable form + a small number of marked `AFX.` integration hooks |
-| `src/legacy/aetherfall.legacy.css` | Original stylesheet |
-| `scripts/patch-legacy.py` | The audit trail of every edit made to the engine (each anchor asserted exactly-once) |
-| `src/aetherfall/` | **New maintainable TypeScript systems**: `catalog.ts` (data), `runtime.ts` (classes, mounts, glider, gamepad, voice, audio), `tutorial.ts`, `bridge.ts` |
-| `src/ui/` | New React UI shell: Character Creator, Weapon Hall, Hub, Tutorial, HUD extras, splash |
-| `docs/` | Feature tracker, testing report, screenshots |
+* **5-Element Magic & Expanded Ability System:**
+  - Fire (*Flame Slash* - sweeping fire arc + burn damage over time)
+  - Ice (*Frost Shield* - damage absorption barrier + chilling freeze reflection)
+  - Lightning (*Thunder Slam* - leaping shockwave slam with AoE stagger/stun)
+  - Earth (*Terra Wall* - defensive bulwark with massive stagger resistance and knockback)
+  - Wind (*Wind Step* - high-velocity dash granting temporary invulnerability and evasive speed)
+  - 5-slot ability hotbar with keybinds (`1`, `2`, `3`, `4`, `5`).
 
-The engine mounts into `#root`; the new shell renders into `#shell` on top. Existing gameplay (combat, quests, factions, bosses, 5 zones, weather, gliding, saves) is untouched except where noted.
+* **Advanced Combat Overhaul:**
+  - **Poise & Stagger System:** Enemies and player possess poise meters. Heavy hits and abilities deplete poise; breaking poise triggers a vulnerable stagger state (`[VULN]`) where hits deal bonus critical damage.
+  - **Directional Blocking & Flanking:** Shields and weapon guards block incoming attacks from the front arc; flanking attacks from the rear bypass guard.
+  - **Timed Perfect Parry & Stagger Reflection:** Blocking within 0.22s of an incoming strike reflects 100% of damage back at the attacker, applies full stagger break, and grants the player a +60% counterattack damage buff.
+  - **Polearms:** Iron Spear, Royal Halberd, and Aetherlance feature extended 3.5m reach with dedicated thrusting geometries.
 
-## Run
+* **5 Companions & Tactical Orders:**
+  - **Corvin Vale (Spellblade):** 5th companion stationed in Thornwick plaza with full backstory, recruitment quest (*The Lost Blade of Corvin*), and hybrid melee/ranged aether spellblade combat.
+  - **Companion Stances & Orders:** Issue real-time tactical commands (`T` key or Companion Codex):
+    - *Follow:* Stay close to the player.
+    - *Defend:* Guard the player, retaliating only when enemies attack.
+    - *Attack:* Aggressively charge and engage targets within range.
+    - *Hold:* Wait and stand ground at current position.
+
+* **Professions & Enchanting:**
+  - New **Enchanting** profession with Enchanting Altar crafting stations placed in alchemy shops and craftable for player homes.
+  - Imbue epic and legendary weapons and gear: *Ring of Five Winds*, *Sunshard Rapier*, *Void Cleaver*, and *Arcane Robes*.
+  - New crafting materials: *Void Essence*, *Warded Timber*, *Quicksilver*, *Aether Dust*.
+
+* **New Foes, Bosses & Wildlife:**
+  - **Aether Golem:** Colossal animated celestial construct world boss outside the Spire ruins with ground slam shockwaves and high poise.
+  - **Void Cultists:** Shadow-casting hostile magic wielders stationed at occult camps.
+  - **Mountain Ram:** Wild horned rams populating mountain and snow ridges with curled horns and flight reactions.
+
+* **Save Export & Import:**
+  - Full JSON save export and file upload import in the Load Game menu, allowing seamless cross-browser and cross-device save migration.
+
+* **Dedicated Game Website & Desktop Distribution:**
+  - **Full Game Website Portal:** Includes Hero showcase, live in-browser playable viewport with fullscreen immersion, 5-element magic deep-dive, interactive 10-class codex, Valdoria world lore, controls guide, and release notes.
+  - **Standalone Windows Executable (`Aetherfall.exe`):** Genuine 64-bit Windows PE GUI executable with embedded self-extracting game payload. Runs 100% offline with zero dependencies in a borderless app window.
+  - **Desktop Distribution Package (`Aetherfall-v0.9-Windows.zip`):** Complete archive containing `Aetherfall.exe`, standalone `index.html`, Windows batch launcher (`Aetherfall-Launcher.bat`), and offline instructions.
+
+---
+## Controls (all remappable in Settings → Controls)
+| Action | Keyboard / mouse | Controller (Xbox/PS glyphs auto-detected) |
+|---|---|---|
+| Move / camera | WASD / mouse (click to capture), arrow keys also rotate | Left stick / Right stick |
+| Jump, **Glide** (press again mid-air) | Space | A |
+| Sprint / Crouch | Shift / C | RB / R3 |
+| Attack / Block / Dodge | LMB / RMB or F / Q | X or RT / LT / B |
+| Abilities 1-5 | 1 2 3 4 5 | D-pad / bumpers |
+| Tactical Companion Command | T | D-pad / custom |
+| Interact | E | Y |
+| Mount / dismount | R | R3 |
+| Quick-heal | H | LB |
+| Inventory / Skills / Journal / Map | I / K / J / M | View = map; menus: D-pad+A/B, LB/RB tabs |
+| Emote / Chat | G / Enter | |
+
+If pointer-lock is unavailable (embedded iframe) hold RMB and move the mouse, or use the arrow keys, to rotate the camera.
+
+## Architecture
 ```
-npm install
-npm run dev        # development
-npm run build      # single-file dist/index.html
-npx vite preview --port 4173 && node scripts/e2e.mjs   # browser smoke test (needs Playwright Chromium)
+src/game/data.ts        static content (classes, items, skills, quests, dialogue, presets, companions…)
+src/game/store.ts       reactive state, saves (versioned, validated, import/export), quests, dialogue VM, inventory
+src/game/audio.ts       WebAudio synthesis + procedural SFX/music/ambience buses
+src/game/world.ts       noise terrain, rivers, textures, instanced vegetation (chunked, culled, wind shader)
+src/game/structures.ts  buildings/walls/castle/landmarks baked into merged meshes + colliders
+src/game/interiors.ts   furniture + interior builders + enchanting altars
+src/game/rigs.ts        humanoid / creature / bird / polearm rigs + animation
+src/game/fx.ts          sky, lights, seasons, weather, particles, torch pool, floating combat text
+src/game/actors.ts      NPC schedules, wildlife, poise/stagger, enemies, bosses, companions, remote players
+src/game/game.ts        engine: input, player controller, parry/combat, interactions, housing, mounts, loop
+src/game/net.ts         PeerJS multiplayer
+src/ui/*.tsx            React UI (menus, creator, HUD, codex, panels, settings)
+tests/*.ts(x)           headless test suites
 ```
 
-## New in this pass
-* **Character creator** — body, height/mass, 5 face shapes, 4 eye shapes + 8 eye colours, brows, 5 facial-hair styles, 5 scars, 5 markings, accessories (scarf, amulet, circlet, eyepatch), hair, 8 outfits, cloak colour/length, gloves, boots, helm, 6 voices, 8 presets, randomise, name, 6 camera angles + drag-rotate. **Every option is built into the real 3D model** (`BA()` in the legacy model builder) and saved.
-* **Weapon Hall** — five classes (Vanguard, Berserker, Ranger, Spellblade, Shadow). The *actual in-game character* holds each weapon and performs a class combat demonstration; cinematic camera push-ins, orbit/inspect, rotating weapon displays, class confirmation sequence. Selection sets starter weapon, class bonuses, spells, supplies.
-* **Class system & hybrids** — class perks scale with level; secondary class (level 5+) grants half-strength bonuses plus its starter weapon; respec; Hub → Class.
-* **Interactive tutorial (7 chapters)** — steps complete by detecting real play (movement, camera, attacks, glide, mount…), adapted to your class, skippable (per-step or whole), replayable, journal (F1), assistance levels, controller glyphs, one-time reminders for unlearned mechanics. Only starts automatically for new characters.
-* **Mounts** — 9 mounts (palfrey, courser, armoured warhorse, heavy destrier, dire wolf, moonstag, ember strider, legendary flying Skystrider, dimensional Veilstrider) with procedural animated rigs, walk/trot/canter/gallop gaits, weighty acceleration, slope-dependent speed, stamina/winded state, health & damage sharing, trample, bonding, upgrades, saddlebags, dye, hoof/call audio.
-* **Glider** — original physics preserved; added visible deploying/folding glider, banking, wind gusts (stronger in storms), 3 upgrade tracks, 3 styles + colours.
-* **Gamepad** (Xbox/PlayStation standard mapping) with glyph prompts; **graphics presets** Chromebook / Low / Medium / High / Ultra / Cinematic, auto-detects ChromeOS.
-* Synthesised player **voice** (grunts/yells/pain), studio branding on splash and title.
+## Tests & Results (run `bash tests/run.sh`)
+| Suite | What it checks | Result |
+|---|---|---|
+| `logic.test.ts` | 643 data-integrity & logic checks: all 10 classes, 5 companions, elemental abilities, hotbar slots, enchanting recipes, save export/import, quests, reputation/prices, equip/use/level/skills, save corruption recovery | **643 / 643 pass** |
+| `world.test.ts` | headless world gen (terrain, settlements, 97k plants, every interior, rigs, 95 NPCs, 244 foes/creatures, 120 frames of weather/sky/AI, enemy aggro/death) | **PASS** |
+| `ui.test.tsx` | server-renders 36 screens/tabs (HUD with 5 hotbars, codex tabs, companion tactical controls, menus, creator, dialogues, shops, housing, MP, settings) | **36 / 36 render** |
+| `play.test.ts` | runs the **real game loop** (stubbed GL): boot, WASD/sprint, jump, **glide**, melee/ability/dodge/damage/kill, NPC dialogue→quest, enter/leave tavern, buy/furnish/upgrade/store in a home, mount/dismount, cave & Hollow Rift with enemies, hotkeys, pause, death/respawn, 4 000 frames of day/weather, save → reload → restart | **53 / 53 pass** |
 
-See `docs/FEATURE_TRACKER.md` for exact status and `docs/TESTING.md` for what was and was not tested.
