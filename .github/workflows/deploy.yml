@@ -58,13 +58,22 @@ jobs:
         with:
           path: './dist'
 
+      - name: Deploy to gh-pages branch (Automatic Branch Publishing)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: false
+          enable_jekyll: false
+
   deploy-pages:
-    name: Deploy to GitHub Pages
+    name: Deploy to GitHub Pages (Actions Target)
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: test-and-build
+    continue-on-error: true
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
