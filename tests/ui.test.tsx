@@ -1,0 +1,21 @@
+// SSR render smoke test of every screen: npx esbuild tests/ui.test.tsx --bundle --platform=node --format=esm --outfile=tests/.u.mjs --external:react --external:react-dom --jsx=automatic
+const noop: any = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+(globalThis as any).document = { createElement: () => ({ getContext: () => noop }), getElementById: () => null, addEventListener() {}, removeEventListener() {} }; (globalThis as any).localStorage = { getItem: () => null, setItem() {}, removeItem() {} }; (globalThis as any).window = globalThis; (globalThis as any).addEventListener = () => {}; (globalThis as any).location = { search: '?join=ABC123', origin: 'http://x', pathname: '/' };
+import { renderToString } from 'react-dom/server';
+import * as st from '../src/game/store';
+import { Codex } from '../src/ui/Codex';
+import { Hud, PauseMenu, DeadScreen, Confirm } from '../src/ui/Hud';
+import { MainMenu, Creator, Intro, Ending, Settings } from '../src/ui/Menus';
+import { Dialogue, Shop, Stable, HouseSale, HouseEdit, Storage, Multiplayer } from '../src/ui/Panels';
+import { api } from '../src/game/game';
+import App from '../src/App';
+const S = st.S; let n = 0, bad = 0; const r = (name: string, el: any) => { try { const html = renderToString(el); if (html.length < 20 && name !== 'Confirm') throw new Error('empty'); n++; } catch (e: any) { bad++; console.log('RENDER FAIL', name, e.message.slice(0, 200)); } };
+st.newPlayer('Aria', 'paladin', st.defaultLook()); S.screen = 'game'; st.startQuest('main'); st.startQuest('moonpetals'); st.startQuest('collector'); st.recruit('lyra'); st.addItem('sword_flame', 1, true); st.addItem('iron_ore', 9, true); st.addItem('shard_sky', 1, true); st.changeRep('moon', 30); st.foundLore(3); S.discovered.spire = true; S.hud.px = -150; S.hud.pz = 90; S.hud.boss = { name: 'Karreth', hp: 5, max: 10, title: 't' }; S.hud.nearHint = { label: 'Talk', kind: 'npc' }; S.hud.stations = ['smithy']; S.ui.fish = { state: 'bite' }; S.hud.banner = { name: 'X', t: Date.now() }; S.ui.subtitle = { name: 'a', text: 'b' };
+r('Hud', <Hud />); r('Pause', <PauseMenu />); r('Dead', <DeadScreen />); S.ui.confirm = { text: 'x', yes() {} }; r('Confirm', <Confirm />);
+['inventory', 'character', 'skills', 'quests', 'map', 'factions', 'companions', 'mounts', 'craft'].forEach((t) => { S.ui.codex = t; r('Codex:' + t, <Codex />); });
+S.screen = 'menu'; r('MainMenu', <MainMenu />); S.creatorMode = 'new'; r('Creator', <Creator />); r('Intro', <Intro onDone={() => {}} />); S.ui.ending = 'ash'; ['dawn', 'ash', 'dominion', 'shatter'].forEach((e) => { S.ui.ending = e; r('Ending:' + e, <Ending />); }); r('Settings', <Settings />);
+['maren', 'dorian', 'maelis', 'lyra'].forEach((id) => { st.openDialogue({ id, name: id, seed: 0.5, def: { pitch: 1 }, role: 'villager' }); r('Dialogue:' + id, <Dialogue />); }); st.openDialogue({ id: 'generic_villager', name: 'Villager', seed: 0.2, role: 'guard', fac: 'crown', shop: 'orrin' }); r('Dialogue:generic', <Dialogue />);
+S.ui.shop = { id: 'ysolde', tab: 'buy' }; r('Shop buy', <Shop />); S.ui.shop.tab = 'sell'; r('Shop sell', <Shop />); r('Stable', <Stable />); S.ui.saleId = 'manor'; r('HouseSale', <HouseSale />); r('HouseEdit', <HouseEdit />);
+(api as any).currentHouse = () => 'cottage'; r('Storage', <Storage />); r('Multiplayer', <Multiplayer />);
+S.screen = 'game'; S.ui.pause = true; S.ui.codex = 'inventory'; r('App(game)', <App />); S.screen = 'creator'; r('App(creator)', <App />); S.screen = 'menu'; r('App(menu)', <App />);
+console.log(`${n} screens rendered, ${bad} failures`); (globalThis as any).process.exit(bad ? 1 : 0);
