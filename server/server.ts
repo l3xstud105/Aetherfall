@@ -7,6 +7,7 @@ import { WorldSimulation, ServerPlayer } from './world';
 import { AuthoritativeCombat } from './combat';
 import { SocialManager } from './social';
 import { DungeonManager } from './instances';
+import { MarketplaceManager } from './marketplace';
 
 export class AetherfallServer {
   port: number;
@@ -15,6 +16,7 @@ export class AetherfallServer {
   combat: AuthoritativeCombat;
   social: SocialManager;
   dungeons: DungeonManager;
+  market: MarketplaceManager;
   wss: WebSocketServer | null = null;
   server: http.Server | null = null;
 
@@ -29,6 +31,7 @@ export class AetherfallServer {
     this.combat = new AuthoritativeCombat(this.world, this.db);
     this.social = new SocialManager(this.world, this.db);
     this.dungeons = new DungeonManager(this.world);
+    this.market = new MarketplaceManager(this.db, this.world);
   }
 
   start(): Promise<void> {
@@ -297,9 +300,11 @@ export class AetherfallServer {
             if (!sessionPlayer || !sessionPlayer.char.guild_id) return;
             const target = [...this.world.players.values()].find((p) => p.char.name.toLowerCase() === String(msg.targetName).toLowerCase());
             if (target) {
+              const guild = this.db.getGuild(sessionPlayer.char.guild_id);
               target.ws.send(JSON.stringify({
                 t: 'guild_invitation',
                 guildId: sessionPlayer.char.guild_id,
+                guildName: guild?.name || 'Guild',
                 fromName: sessionPlayer.char.name
               }));
             }
@@ -319,7 +324,10 @@ export class AetherfallServer {
           // --- Player Trading
           case 'trade_req': {
             if (!sessionPlayer) return;
-            const target = this.world.players.get(String(msg.targetId));
+            let target = msg.targetId ? this.world.players.get(String(msg.targetId)) : null;
+            if (!target && msg.targetName) {
+              target = [...this.world.players.values()].find((p) => p.char.name.toLowerCase() === String(msg.targetName).toLowerCase()) || null;
+            }
             if (target) {
               this.social.startTrade(sessionPlayer, target);
             }
@@ -394,6 +402,116 @@ export class AetherfallServer {
               zone: 'world',
               pos: sessionPlayer.pos
             }));
+            break;
+          }
+
+          // --- Friends & Inspection
+          case 'friends_get': {
+            if (!sessionPlayer) return;
+            this.social.sendFriendsList(sessionPlayer);
+            break;
+          }
+
+          case 'friend_req': {
+            if (!sessionPlayer) return;
+            this.social.handleFriendReq(sessionPlayer, String(msg.targetName || ''));
+            break;
+          }
+
+          case 'friend_remove': {
+            if (!sessionPlayer) return;
+            this.social.handleFriendRemove(sessionPlayer, String(msg.friendId || ''));
+            break;
+          }
+
+          case 'inspect_req': {
+            if (!sessionPlayer) return;
+            this.social.handleInspect(sessionPlayer, String(msg.target || ''));
+            break;
+          }
+
+          // --- LFG / Dungeon Matchmaking
+          case 'lfg_join': {
+            if (!sessionPlayer) return;
+            this.social.handleLfgJoin(sessionPlayer, String(msg.dungeon || 'crypt'));
+            break;
+          }
+
+          case 'lfg_leave': {
+            if (!sessionPlayer) return;
+            this.social.handleLfgLeave(sessionPlayer);
+            break;
+          }
+
+          // --- Moderation & Reporting
+          case 'report': {
+            if (!sessionPlayer) return;
+            this.social.handleReport(sessionPlayer, String(msg.targetName || ''), String(msg.reason || ''), msg.details);
+            break;
+          }
+
+          // --- Marketplace / Auction House
+          case 'market_browse': {
+            if (!sessionPlayer) return;
+            this.market.handleBrowse(sessionPlayer, msg.search);
+            break;
+          }
+
+          case 'market_my_listings': {
+            if (!sessionPlayer) return;
+            this.market.handleMyListings(sessionPlayer);
+            break;
+          }
+
+          case 'market_list': {
+            if (!sessionPlayer) return;
+            this.market.handleCreateListing(sessionPlayer, String(msg.itemId), Number(msg.qty), Number(msg.price));
+            break;
+          }
+
+          case 'market_buy': {
+            if (!sessionPlayer) return;
+            this.market.handleBuyListing(sessionPlayer, String(msg.listingId));
+            break;
+          }
+
+          case 'market_cancel': {
+            if (!sessionPlayer) return;
+            this.market.handleCancelListing(sessionPlayer, String(msg.listingId));
+            break;
+          }
+
+          // --- World Events & Rebuilding
+          case 'world_event_trigger': {
+            const ev = this.world.triggerEvent(msg.eventType || 'bandit_siege');
+            ws.send(JSON.stringify({ t: 'world_event_start', event: this.world.getEventSummary(ev) }));
+            break;
+          }
+
+          case 'settlement_contribute': {
+            if (!sessionPlayer) return;
+            this.world.contributeToSettlement(String(msg.settlement), msg.material, Number(msg.qty || 1));
+            break;
+          }
+
+          // --- Persistent Housing
+          case 'house_get': {
+            const house = this.db.getHouse(String(msg.houseId));
+            ws.send(JSON.stringify({ t: 'house_data', house }));
+            break;
+          }
+
+          case 'house_save': {
+            if (!sessionPlayer) return;
+            const saved = this.db.saveHouse(
+              String(msg.houseId),
+              sessionPlayer.char.id,
+              sessionPlayer.char.name,
+              Number(msg.level || 1),
+              msg.furniture || [],
+              msg.storage || {}
+            );
+            ws.send(JSON.stringify({ t: 'house_saved', house: saved }));
             break;
           }
         }

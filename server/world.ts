@@ -2,6 +2,23 @@
 // Fixed 20Hz tick rate, spatial grid partitioning, and authoritative enemy AI.
 import { PersistentCharacter } from './db';
 
+export interface WorldEvent {
+  id: string;
+  type: 'bandit_siege' | 'caravan' | 'void_surge' | 'world_boss';
+  title: string;
+  desc: string;
+  region: string;
+  x: number;
+  z: number;
+  startTime: number;
+  durationMs: number;
+  targetCount: number;
+  currentCount: number;
+  bossId?: string;
+  contributions: Map<string, number>;
+  status: 'active' | 'victory' | 'failed';
+}
+
 export interface ServerFoe {
   id: string;
   type: string;
@@ -55,6 +72,12 @@ export class WorldSimulation {
   players = new Map<string, ServerPlayer>(); // charId -> player
   foes = new Map<string, ServerFoe>(); // foeId -> foe
   spatialGrid = new Map<string, Set<string>>(); // cellKey -> Set<charId>
+
+  currentEvent: WorldEvent | null = null;
+  eventTimer = 0;
+  settlementState = {
+    ashenvale: { wood: 0, stone: 0, iron: 0, tier: 1, maxMaterials: 100 }
+  };
 
   constructor() {
     this.initWorldSpawns();
@@ -298,6 +321,189 @@ export class WorldSimulation {
       if (p.char.mana < 50) p.char.mana = Math.min(50, p.char.mana + 4 * dt);
       if (p.char.sta < 100) p.char.sta = Math.min(100, p.char.sta + 15 * dt);
     });
+
+    // 4. World Events Loop
+    this.eventTimer += dt;
+    if (this.currentEvent && this.currentEvent.status === 'active') {
+      const elapsed = Date.now() - this.currentEvent.startTime;
+      if (elapsed > this.currentEvent.durationMs) {
+        if (this.currentEvent.currentCount >= this.currentEvent.targetCount) {
+          this.currentEvent.status = 'victory';
+          this.distributeEventRewards(this.currentEvent);
+        } else {
+          this.currentEvent.status = 'failed';
+          this.broadcastAll({
+            t: 'world_event_end',
+            event: this.getEventSummary(this.currentEvent),
+            result: 'failed',
+            msg: `The defenders were overwhelmed at ${this.currentEvent.title}.`
+          });
+        }
+      }
+    } else if (this.eventTimer >= 300) {
+      this.eventTimer = 0;
+      this.triggerRandomEvent();
+    }
+  }
+
+  triggerRandomEvent(): WorldEvent {
+    const types: WorldEvent['type'][] = ['bandit_siege', 'caravan', 'void_surge', 'world_boss'];
+    const chosen = types[Math.floor(Math.random() * types.length)];
+    return this.triggerEvent(chosen);
+  }
+
+  triggerEvent(type: WorldEvent['type']): WorldEvent {
+    const id = 'ev_' + Date.now();
+    let title = 'Bandit Siege on Ashenvale Outpost';
+    let desc = 'Bandit raiders are attacking Ashenvale! Defeat 10 raiders to secure the outpost.';
+    let region = 'Ashenvale Outpost';
+    let x = -10, z = 205;
+    let targetCount = 10;
+    let bossId: string | undefined;
+
+    if (type === 'caravan') {
+      title = 'Royal Merchant Caravan Ambush';
+      desc = 'Smugglers have ambushed the royal caravan on the eastern road! Defend the cargo.';
+      region = 'Eastern Highway';
+      x = 110; z = -150;
+      targetCount = 8;
+    } else if (type === 'void_surge') {
+      title = 'Void Incursion at Hollow Rift';
+      desc = 'Void aberrations are surging from the Hollow Door! Banish the void creatures.';
+      region = 'The Hollow Rift';
+      x = -80; z = -140;
+      targetCount = 12;
+    } else if (type === 'world_boss') {
+      title = 'Ancient Storm Warden Kharun Awakens';
+      desc = 'The ancient titan Kharun has broken his seal! Band together to fell the storm titan.';
+      region = 'Veilfall Basin';
+      x = 60; z = -150;
+      targetCount = 1;
+      bossId = 'world_boss_kharun';
+      if (!this.foes.has(bossId)) {
+        this.spawnFoe({
+          id: bossId,
+          type: 'storm_warden',
+          name: 'Kharun, Storm Warden',
+          x, z,
+          max: 5000,
+          ai: 'boss',
+          boss: true,
+          respawnTime: 600,
+          dmg: 35,
+          spd: 3.8
+        });
+      }
+    }
+
+    this.currentEvent = {
+      id,
+      type,
+      title,
+      desc,
+      region,
+      x, z,
+      startTime: Date.now(),
+      durationMs: 180000,
+      targetCount,
+      currentCount: 0,
+      bossId,
+      contributions: new Map(),
+      status: 'active'
+    };
+
+    this.broadcastAll({
+      t: 'world_event_start',
+      event: this.getEventSummary(this.currentEvent)
+    });
+
+    return this.currentEvent;
+  }
+
+  recordEventProgress(charId: string, amount = 1) {
+    if (!this.currentEvent || this.currentEvent.status !== 'active') return;
+    this.currentEvent.currentCount = Math.min(this.currentEvent.targetCount, this.currentEvent.currentCount + amount);
+    const prev = this.currentEvent.contributions.get(charId) || 0;
+    this.currentEvent.contributions.set(charId, prev + amount);
+
+    this.broadcastAll({
+      t: 'world_event_update',
+      event: this.getEventSummary(this.currentEvent)
+    });
+
+    if (this.currentEvent.currentCount >= this.currentEvent.targetCount) {
+      this.currentEvent.status = 'victory';
+      this.distributeEventRewards(this.currentEvent);
+    }
+  }
+
+  private distributeEventRewards(ev: WorldEvent) {
+    const contributors = [...ev.contributions.entries()];
+    this.broadcastAll({
+      t: 'world_event_end',
+      event: this.getEventSummary(ev),
+      result: 'victory',
+      msg: `VICTORY! ${ev.title} has been completed! All champions awarded bonus gold & XP.`
+    });
+
+    contributors.forEach(([cId, score]) => {
+      const p = this.players.get(cId);
+      if (p) {
+        const bonusGold = Math.min(250, 50 + score * 20);
+        const bonusXp = Math.min(1000, 200 + score * 80);
+        p.char.gold += bonusGold;
+        p.char.xp += bonusXp;
+        if (p.ws.readyState === 1) {
+          p.ws.send(JSON.stringify({
+            t: 'inv_update',
+            gold: p.char.gold,
+            xp: p.char.xp,
+            level: p.char.level,
+            rewardMsg: `World Event: +${bonusGold} gold, +${bonusXp} XP!`
+          }));
+        }
+      }
+    });
+  }
+
+  getEventSummary(ev: WorldEvent) {
+    return {
+      id: ev.id,
+      type: ev.type,
+      title: ev.title,
+      desc: ev.desc,
+      region: ev.region,
+      x: ev.x,
+      z: ev.z,
+      currentCount: ev.currentCount,
+      targetCount: ev.targetCount,
+      status: ev.status,
+      remainingSec: Math.max(0, Math.floor((ev.durationMs - (Date.now() - ev.startTime)) / 1000))
+    };
+  }
+
+  contributeToSettlement(settlement: string, material: 'wood' | 'stone' | 'iron', qty: number) {
+    if (settlement === 'ashenvale') {
+      const ash = this.settlementState.ashenvale;
+      ash[material] = (ash[material] || 0) + qty;
+      if (ash.wood >= 30 && ash.stone >= 30 && ash.iron >= 20 && ash.tier < 2) {
+        ash.tier = 2;
+        this.broadcastAll({
+          t: 'chat_msg',
+          channel: 'world',
+          from: 'System',
+          text: '🏛️ Ashenvale Outpost has reached Rebuilding Tier II! Artisan merchants have set up shop.'
+        });
+      } else if (ash.wood >= 80 && ash.stone >= 80 && ash.iron >= 60 && ash.tier < 3) {
+        ash.tier = 3;
+        this.broadcastAll({
+          t: 'chat_msg',
+          channel: 'world',
+          from: 'System',
+          text: '🏰 Ashenvale Outpost has been fully restored to a Grand Bastion!'
+        });
+      }
+    }
   }
 
   damagePlayer(p: ServerPlayer, rawDmg: number, attacker: ServerFoe) {
@@ -355,5 +561,9 @@ export class WorldSimulation {
         p.ws.send(raw);
       }
     });
+  }
+
+  broadcastAll(packet: any) {
+    this.broadcastGlobal(packet);
   }
 }

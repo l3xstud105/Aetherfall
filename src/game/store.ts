@@ -18,9 +18,16 @@ export const defaultSettings = () => ({
 });
 export const S: any = {
   screen: 'menu', creatorMode: 'new', p: null, rep: {}, quests: {}, flags: {}, comp: {}, houses: {}, farm: {}, world: { time: 9, day: 1, weather: 'clear', clock: 0 }, discovered: {}, lore: {}, settings: defaultSettings(),
-  ui: { codex: null as string | null, dialogue: null as any, shop: null as any, stable: false, houseSale: false, houseEdit: false, storage: false, confirm: null as any, toasts: [] as any[], subtitle: null as any, pause: false, settings: false, mp: false, prompt: null as any, loading: null as any, chat: false, tutorialSeen: {} as any, fish: null as any, dead: false, ending: null as any, mapWaypoint: null as any },
+  ui: { codex: null as string | null, dialogue: null as any, shop: null as any, stable: false, houseSale: false, houseEdit: false, storage: false, confirm: null as any, toasts: [] as any[], subtitle: null as any, pause: false, settings: false, mp: false, social: false, market: false, inspect: false, trade: false, prompt: null as any, loading: null as any, chat: false, tutorialSeen: {} as any, fish: null as any, dead: false, ending: null as any, mapWaypoint: null as any },
   hud: { hp: 100, mana: 50, sta: 100, region: '', time: '', weather: '', boss: null as any, target: null as any, cd: [0, 0, 0, 0, 0], buffs: [] as any[], mounted: false, glide: false, compass: 0, inside: false, speaking: null, fps: 0, input: 'kb', pad: 'xbox', msg: '', nearHint: null as any, combat: false, tracking: false },
   chatLog: [] as any[],
+  party: null as any,
+  trade: null as any,
+  friends: [] as any[],
+  inspectTarget: null as any,
+  lfg: { status: 'idle', dungeon: null as string | null, queueSize: 0 },
+  market: { listings: [] as any[], myListings: [] as any[] },
+  worldEvent: null as any,
 };
 export const resetWorldState = () => { S.rep = Object.fromEntries(Object.keys(FACTIONS).map((k) => [k, 0])); S.quests = {}; S.flags = {}; S.comp = {}; S.houses = {}; S.farm = {}; S.world = { time: 9, day: 1, weather: 'clear', clock: 0 }; S.discovered = {}; S.lore = {}; };
 resetWorldState();

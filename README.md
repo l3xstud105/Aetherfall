@@ -1,7 +1,86 @@
-# AETHERFALL 1.0 — A Tale of Broken Skies
-**L3X STUD105** · browser-first 3D third-person open-world fantasy RPG (Three.js + React + WebAudio + PeerJS)
+# AETHERFALL 1.0.0 — One World. One Realm. Every Player.
+**L3X STUD105** · Browser-first 3D third-person open-world persistent MMORPG (Three.js WebGL 2.0 + React 19 + Node.js Authoritative WebSocket Server + Native SQLite WAL).
 
-Play: `npm install && npm run build`, then open `dist/index.html` (single self-contained file). Dev: `npm run dev`.
+Play in browser: `npm install && npm run build`, then open `dist/index.html` or run `npm run dev`.  
+Dedicated Global Realm Server: `npm run server` (listens on `0.0.0.0:7777`).
+
+---
+
+## 🌐 Global MMORPG Transformation (Milestones 1–5)
+
+AETHERFALL 1.0.0 transforms the game into a persistent, authoritative single-realm MMORPG where every player connects to the same persistent game universe.
+
+### Key MMORPG Features:
+1. **One Global Realm (`server/`):**
+   - Authoritative dedicated Node.js WebSocket backend running on port 7777.
+   - Native SQLite `DatabaseSync` persistence configured with Write-Ahead Logging (`WAL`), foreign keys, and atomic transactions.
+   - Persistent player accounts, character creation/selection, inventory, gold, equipment, guilds, friendships, and audit trade logs.
+   - 20Hz world simulation loop with 64m × 64m spatial grid partitioning for optimized bandwidth and anti-cheat protection.
+2. **Server-Authoritative Gameplay:**
+   - Authoritative movement validation, delta checking, and speedhack teleport rejection.
+   - Server-validated reach, resource expenditure, and directional poise stagger.
+   - Authoritative 5-Element Reaction Matrix: Conflagration, Superconductor, Vaporize 2×, Electro-Discharge, Magma Eruption.
+   - Multi-phase boss mechanics with Phase II Enrage transitions at ≤50% HP.
+   - Server-side loot, experience, and currency drops persisted directly to player DB profiles.
+3. **Comprehensive Social & Economic Systems:**
+   - Multi-channel chat (`world`, `local`, `party`, `guild`, `whisper`) with rate limits and profanity filtering.
+   - Persistent Friends list with real-time online status and direct whisper/party shortcuts.
+   - Full Party system (up to 4 players) with synchronized member vitals in the HUD.
+   - Player Inspection modal viewing equipped gear, stats, and guild affiliation.
+   - Guild system with hierarchy management (`leader`, `officer`, `member`).
+   - Secure Two-Phase Player Trading (Negotiate → Lock → Confirm) with zero item duplication risk.
+4. **Living Persistent World & World Events:**
+   - Synchronized day/night clock, dynamic weather patterns, and NPC schedules.
+   - Dynamic World Events: *Bandit Siege on Ashenvale Outpost*, *Royal Caravan Ambush*, *Void Incursion at Hollow Rift*, and *Ancient Storm Warden Kharun Awakens*.
+   - World event contribution tracking awarding bonus gold, XP, and relics to defenders.
+   - Persistent settlement rebuilding: server-wide resource donation advancing Ashenvale Outpost through rebuilding tiers.
+5. **Player Marketplace & Persistent Housing:**
+   - In-game Player Marketplace / Auction House: list items from bag, search listings by name, buy items with atomic gold/item escrow, and cancel listings.
+   - Persistent housing saving furniture layouts, storage chests, and crafting stations to database.
+6. **Cooperative LFG Matchmaking & Dungeon Instances:**
+   - Dungeon queue tool pairing players for cooperative runs in Whispering Catacombs, Sunken Aether Temple, Bastion Undercroft, Luminescent Grotto, and Hollow Rift.
+7. **100% Offline Single-Player Preserved:**
+   - Complete offline single-player campaign remains fully playable without an internet connection or server dependency.
+
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Run Development Client
+```bash
+npm install
+npm run dev
+```
+Client runs at `http://localhost:5173/`.
+
+### 2. Launch Authoritative Global Realm Server
+```bash
+npm run server
+```
+Server starts on `0.0.0.0:7777` with native SQLite database (`aetherfall_realm.db`).
+
+### 3. Connect Multiple Players
+- Open two browser tabs at `http://localhost:5173/`.
+- In each tab, click **🌐 Enter Global Realm (MMO)**.
+- Enter distinct character names (e.g., `Thorin` and `Aria`).
+- Both players will spawn into the shared world, see each other move in real-time, chat across channels, form parties, trade, and tackle dungeons together.
+
+### 4. Run Automated Test Suite
+```bash
+bash tests/run.sh
+```
+Executes all 8 headless test suites (900+ assertions) covering logic, world physics, UI, gameplay loop, P2P fallback, authoritative server, milestones 1–5, and staged load testing.
+
+---
+
+## 🛠️ Production Deployment
+
+For Docker, systemd, Nginx reverse proxy with WSS, SSL/TLS, and automated database backups, refer to **`docs/DEPLOYMENT.md`**.
+
+```bash
+# Launch with Docker Compose
+docker compose up -d --build
+```
 
 ---
 ## 🌟 What's New in Version 1.0

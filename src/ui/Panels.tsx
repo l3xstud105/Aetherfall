@@ -86,147 +86,494 @@ export function Storage() {
 
 export function Multiplayer() {
   useUI();
-  const [tab, setTab] = useState<'realm' | 'peer'>(net.isRealm ? 'realm' : 'realm');
+  const [tab, setTab] = useState<'realm' | 'friends' | 'party' | 'market' | 'peer'>('realm');
   const [code, setCode] = useState((new URLSearchParams(location.search).get('join') || '').toUpperCase());
   const [partyTarget, setPartyTarget] = useState('');
   const [tradeTarget, setTradeTarget] = useState('');
+  const [friendInput, setFriendInput] = useState('');
+  const [marketSearch, setMarketSearch] = useState('');
+  const [marketSellItem, setMarketSellItem] = useState('');
+  const [marketSellQty, setMarketSellQty] = useState(1);
+  const [marketSellPrice, setMarketSellPrice] = useState(10);
+  const [marketSubTab, setMarketSubTab] = useState<'browse' | 'sell' | 'my'>('browse');
+  const [lfgDungeon, setLfgDungeon] = useState('crypt');
+
   const close = () => { S.ui.mp = false; emitUI(); };
+
+  useEffect(() => {
+    if (tab === 'friends') net.requestFriendsList();
+    if (tab === 'market') {
+      net.requestMarketBrowse(marketSearch);
+      net.requestMyMarketListings();
+    }
+  }, [tab]);
 
   const onPeer = net.status === 'hosting' || net.status === 'joined';
   const link = `${location.origin}${location.pathname}?join=${net.code}`;
   const roster = [...net.roster.values()];
 
+  const dungeons = [
+    { id: 'crypt', name: 'Whispering Catacombs (Lv 1–10)' },
+    { id: 'sunken_temple', name: 'Sunken Aether Temple (Lv 8–18)' },
+    { id: 'fortress_undercroft', name: 'Bastion Undercroft (Lv 12–22)' },
+    { id: 'grotto', name: 'Luminescent Grotto (Lv 15–25)' },
+    { id: 'hollow_rift', name: 'The Hollow Rift (Lv 20+ End-Game)' }
+  ];
+
   return (
-    <Window title="Multiplayer & Realm" icon="🌐" onClose={close} w="min(680px,96vw)" h="auto">
-      <div className="p-4 flex flex-col gap-3">
-        <div className="flex gap-2 border-b border-line pb-2">
-          <Btn className={tab === 'realm' ? 'sel' : ''} onClick={() => setTab('realm')}>🌐 Global Realm (MMO)</Btn>
-          <Btn className={tab === 'peer' ? 'sel' : ''} onClick={() => setTab('peer')}>🔗 Peer Co-op (Legacy)</Btn>
+    <Window title="Aetherfall MMORPG Realm & Social" icon="🌐" onClose={close} w="min(760px,96vw)" h="min(580px,90vh)">
+      <div className="p-4 flex flex-col gap-3 h-full overflow-hidden">
+        <div className="flex gap-2 border-b border-line pb-2 flex-wrap">
+          <Btn className={tab === 'realm' ? 'sel' : ''} onClick={() => setTab('realm')}>🌐 Realm Status</Btn>
+          <Btn className={tab === 'friends' ? 'sel' : ''} onClick={() => setTab('friends')}>👥 Friends ({S.friends?.length || 0})</Btn>
+          <Btn className={tab === 'party' ? 'sel' : ''} onClick={() => setTab('party')}>🛡️ Party & LFG</Btn>
+          <Btn className={tab === 'market' ? 'sel' : ''} onClick={() => setTab('market')}>⚖️ Marketplace</Btn>
+          <Btn className={tab === 'peer' ? 'sel' : ''} onClick={() => setTab('peer')}>🔗 Peer Co-op</Btn>
         </div>
 
-        {tab === 'realm' && (
-          <div className="flex flex-col gap-3">
-            <div className="card p-3 flex justify-between items-center">
-              <div>
-                <div className="font-bold text-blue-400">Aetherfall Global Realm</div>
-                <div className="dim text-xs">Authoritative Dedicated Server · Port 7777</div>
+        <div className="flex-1 overflow-y-auto pr-1">
+          {tab === 'realm' && (
+            <div className="flex flex-col gap-3">
+              <div className="card p-3 flex justify-between items-center">
+                <div>
+                  <div className="font-bold text-blue-400 text-base">Aetherfall Global Realm</div>
+                  <div className="dim text-xs">Authoritative Dedicated Server · Port 7777 · 20Hz Tick</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`chip ${net.status === 'realm' ? 'bg-green-800 text-green-200' : 'bg-slate-700'}`}>
+                    {net.status === 'realm' ? 'CONNECTED' : net.status.toUpperCase()}
+                  </span>
+                  {net.status === 'realm' && <span className="text-sm font-semibold text-emerald-400">Online: {net.onlineCount}</span>}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`chip ${net.status === 'realm' ? 'bg-green-800 text-green-200' : 'bg-slate-700'}`}>
-                  {net.status === 'realm' ? 'CONNECTED' : net.status.toUpperCase()}
-                </span>
-                {net.status === 'realm' && <span className="text-sm font-semibold text-emerald-400">Online: {net.onlineCount}</span>}
-              </div>
-            </div>
 
-            {net.status !== 'realm' ? (
-              <div className="flex flex-col gap-2">
-                <div className="dim text-sm">You are currently playing in Offline Campaign mode. Connect to join the living shared realm.</div>
-                <Btn className="big" style={{ background: '#2563eb' }} onClick={() => net.connectRealm()}>
-                  🌐 Connect to Global Realm
+              {net.status !== 'realm' ? (
+                <div className="flex flex-col gap-2">
+                  <div className="dim text-sm">You are currently playing in Offline Campaign mode. Connect to join the living shared realm.</div>
+                  <Btn className="big" style={{ background: '#2563eb' }} onClick={() => net.connectRealm()}>
+                    🌐 Connect to Global Realm
+                  </Btn>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <div className="card p-3 flex flex-col gap-2">
+                    <div className="title text-sm">Initiate Player Trade</div>
+                    <div className="flex gap-2">
+                      <input
+                        className="input flex-1"
+                        placeholder="Enter player name to trade with..."
+                        value={tradeTarget}
+                        onChange={(e) => setTradeTarget(e.target.value)}
+                      />
+                      <Btn disabled={!tradeTarget.trim()} onClick={() => {
+                        if (net.realmWs?.readyState === 1) {
+                          net.realmWs.send(JSON.stringify({ t: 'trade_req', targetName: tradeTarget.trim() }));
+                          toast(`Trade request sent to ${tradeTarget.trim()}`, 'info');
+                          setTradeTarget('');
+                        }
+                      }}>
+                        🤝 Send Trade Request
+                      </Btn>
+                    </div>
+                  </div>
+
+                  <div className="card p-3 flex flex-col gap-2">
+                    <div className="title text-sm">Inspect Player Profile</div>
+                    <div className="flex gap-2">
+                      <input
+                        className="input flex-1"
+                        placeholder="Enter player name to inspect..."
+                        value={partyTarget}
+                        onChange={(e) => setPartyTarget(e.target.value)}
+                      />
+                      <Btn disabled={!partyTarget.trim()} onClick={() => {
+                        net.requestInspect(partyTarget.trim());
+                        setPartyTarget('');
+                      }}>
+                        🔍 Inspect
+                      </Btn>
+                    </div>
+                  </div>
+
+                  <Btn className="danger self-start" onClick={() => { net.leave(); toast('Disconnected from realm.', 'info'); }}>
+                    Disconnect from Realm
+                  </Btn>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'friends' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  placeholder="Enter character name to add as friend..."
+                  value={friendInput}
+                  onChange={(e) => setFriendInput(e.target.value)}
+                />
+                <Btn disabled={!friendInput.trim()} onClick={() => {
+                  net.sendFriendReq(friendInput.trim());
+                  setFriendInput('');
+                }}>
+                  + Add Friend
                 </Btn>
               </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {/* Party System */}
-                <div className="card p-3 flex flex-col gap-2">
-                  <div className="title text-sm">Party Management</div>
-                  <div className="flex gap-2">
-                    <input
-                      className="input flex-1"
-                      placeholder="Enter player name to invite..."
-                      value={partyTarget}
-                      onChange={(e) => setPartyTarget(e.target.value)}
-                    />
-                    <Btn disabled={!partyTarget.trim()} onClick={() => { net.sendPartyInvite(partyTarget.trim()); setPartyTarget(''); }}>
-                      Invite to Party
-                    </Btn>
-                  </div>
-                  {S.party && S.party.members && (
-                    <div className="flex flex-col gap-1 mt-1">
-                      <div className="dim text-xs">Party Members:</div>
-                      {S.party.members.map((m: any) => (
-                        <div key={m.id} className="flex justify-between items-center text-xs py-1 px-2 bg-black/20 rounded">
-                          <span>{m.name} (Lv {m.level} {m.cls})</span>
-                          <span className="text-emerald-400">{Math.ceil(m.hp)}/{m.maxHp} HP</span>
-                        </div>
-                      ))}
-                      <Btn className="sm danger self-start mt-1" onClick={() => net.sendPartyLeave()}>Leave Party</Btn>
+
+              <div className="flex flex-col gap-1 mt-2">
+                {(!S.friends || S.friends.length === 0) && (
+                  <div className="dim p-4 text-center">No friends added yet. Add fellow travelers to your list!</div>
+                )}
+                {(S.friends || []).map((f: any) => (
+                  <div key={f.id} className="card p-2.5 flex justify-between items-center bg-black/20">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${f.online ? 'bg-green-400' : 'bg-slate-600'}`} />
+                      <div>
+                        <span className="font-bold text-slate-100">{f.name}</span>
+                        <span className="dim text-xs ml-2">Lv {f.level} {f.cls} {f.online ? `· ${f.zone}` : '· Offline'}</span>
+                      </div>
                     </div>
+                    <div className="flex gap-1">
+                      {f.online && (
+                        <>
+                          <Btn className="sm" onClick={() => { net.sendChat(`/w ${f.name} `); S.ui.chat = true; close(); }}>Whisper</Btn>
+                          <Btn className="sm" onClick={() => net.sendPartyInvite(f.name)}>Party</Btn>
+                        </>
+                      )}
+                      <Btn className="sm danger" onClick={() => net.sendFriendRemove(f.id)}>Remove</Btn>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'party' && (
+            <div className="flex flex-col gap-3">
+              <div className="card p-3 flex flex-col gap-2">
+                <div className="title text-sm">Party Management</div>
+                <div className="flex gap-2">
+                  <input
+                    className="input flex-1"
+                    placeholder="Enter player name to invite..."
+                    value={partyTarget}
+                    onChange={(e) => setPartyTarget(e.target.value)}
+                  />
+                  <Btn disabled={!partyTarget.trim()} onClick={() => { net.sendPartyInvite(partyTarget.trim()); setPartyTarget(''); }}>
+                    Invite to Party
+                  </Btn>
+                </div>
+
+                {S.party && S.party.members && (
+                  <div className="flex flex-col gap-1 mt-1">
+                    <div className="dim text-xs">Party Members:</div>
+                    {S.party.members.map((m: any) => (
+                      <div key={m.id} className="flex justify-between items-center text-xs py-1 px-2 bg-black/20 rounded">
+                        <span>{m.name} (Lv {m.level} {m.cls})</span>
+                        <span className="text-emerald-400">{Math.ceil(m.hp)}/{m.maxHp || 100} HP</span>
+                      </div>
+                    ))}
+                    <Btn className="sm danger self-start mt-1" onClick={() => net.sendPartyLeave()}>Leave Party</Btn>
+                  </div>
+                )}
+              </div>
+
+              {/* LFG Dungeon Matchmaking */}
+              <div className="card p-3 flex flex-col gap-2">
+                <div className="title text-sm">Cooperative Dungeon Matchmaking (LFG)</div>
+                <div className="dim text-xs">Queue for group dungeon instances across the realm:</div>
+                <div className="flex gap-2">
+                  <select
+                    className="input flex-1"
+                    value={lfgDungeon}
+                    onChange={(e) => setLfgDungeon(e.target.value)}
+                  >
+                    {dungeons.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  {S.lfg?.status === 'queued' ? (
+                    <Btn className="danger" onClick={() => net.sendLfgLeave()}>Leave Queue</Btn>
+                  ) : (
+                    <Btn style={{ background: '#2563eb' }} onClick={() => net.sendLfgJoin(lfgDungeon)}>
+                      🔍 Find Group
+                    </Btn>
                   )}
                 </div>
+                {S.lfg?.status === 'queued' && (
+                  <div className="dim text-xs text-blue-300 anim-fade">
+                    ⏳ Searching for realm adventurers... ({S.lfg.queueSize} in queue)
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
-                {/* Direct Trade */}
-                <div className="card p-3 flex flex-col gap-2">
-                  <div className="title text-sm">Player Trade</div>
+          {tab === 'market' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2 border-b border-line pb-1 text-xs">
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded cursor-pointer ${marketSubTab === 'browse' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                  onClick={() => setMarketSubTab('browse')}
+                >
+                  Browse Market
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded cursor-pointer ${marketSubTab === 'sell' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                  onClick={() => setMarketSubTab('sell')}
+                >
+                  Sell from Pack
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 rounded cursor-pointer ${marketSubTab === 'my' ? 'bg-blue-600 text-white font-bold' : 'text-slate-400 hover:text-white'}`}
+                  onClick={() => { setMarketSubTab('my'); net.requestMyMarketListings(); }}
+                >
+                  My Listings ({S.market?.myListings?.length || 0})
+                </button>
+              </div>
+
+              {marketSubTab === 'browse' && (
+                <div className="flex flex-col gap-2">
                   <div className="flex gap-2">
                     <input
                       className="input flex-1"
-                      placeholder="Enter player name to trade with..."
-                      value={tradeTarget}
-                      onChange={(e) => setTradeTarget(e.target.value)}
+                      placeholder="Search items by name..."
+                      value={marketSearch}
+                      onChange={(e) => setMarketSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && net.requestMarketBrowse(marketSearch)}
                     />
-                    <Btn disabled={!tradeTarget.trim()} onClick={() => {
-                      if (net.realmWs?.readyState === 1) {
-                        net.realmWs.send(JSON.stringify({ t: 'trade_req', targetName: tradeTarget.trim() }));
-                        toast(`Trade request sent to ${tradeTarget.trim()}`, 'info');
-                        setTradeTarget('');
-                      }
-                    }}>
-                      Initiate Trade
-                    </Btn>
+                    <Btn onClick={() => net.requestMarketBrowse(marketSearch)}>Search</Btn>
+                  </div>
+                  <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
+                    {(!S.market?.listings || S.market.listings.length === 0) && (
+                      <div className="dim p-4 text-center">No active listings match your search.</div>
+                    )}
+                    {(S.market?.listings || []).map((l: any) => {
+                      const def = ITEMS[l.item_id];
+                      return (
+                        <div key={l.id} className="card p-2 flex justify-between items-center bg-black/20 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{iconOf(l.item_id)}</span>
+                            <div>
+                              <div className="font-bold text-slate-100">{def?.name || l.item_id} <span className="text-amber-400">x{l.qty}</span></div>
+                              <div className="dim text-slate-400">Seller: {l.seller_name}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-bold text-yellow-400 text-sm">{l.price}g</span>
+                            <Btn
+                              className="sm"
+                              style={{ background: '#16a34a' }}
+                              disabled={S.p?.gold < l.price || l.seller_id === S.p?.id}
+                              onClick={() => net.sendMarketBuy(l.id)}
+                            >
+                              Buy
+                            </Btn>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
+              )}
 
-                <Btn className="danger self-start" onClick={() => { net.leave(); toast('Disconnected from realm.', 'info'); }}>
-                  Disconnect from Realm
-                </Btn>
-              </div>
-            )}
-          </div>
-        )}
+              {marketSubTab === 'sell' && (
+                <div className="card p-3 flex flex-col gap-3">
+                  <div className="title text-sm">List Item on Realm Marketplace</div>
+                  <div className="flex flex-col gap-1">
+                    <label className="dim text-xs">Select Item from Your Bag:</label>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto p-1 bg-black/30 rounded">
+                      {Object.entries(S.p?.inv || {}).filter(([id, qty]) => (qty as number) > 0 && ITEMS[id]?.type !== 'quest').map(([id, qty]) => {
+                        const def = ITEMS[id];
+                        const sel = marketSellItem === id;
+                        return (
+                          <button
+                            key={id}
+                            className={`chip cursor-pointer ${sel ? 'border-amber-400 bg-amber-950/40' : 'hover:border-blue-400'}`}
+                            onClick={() => { setMarketSellItem(id); setMarketSellQty(1); }}
+                          >
+                            <span>{iconOf(id)} {def?.name || id}</span>
+                            <span className="dim">({qty as number})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-        {tab === 'peer' && (
-          <div className="flex flex-col gap-3">
-            <div className="card p-3 flex items-center gap-2">
-              <span className="chip sel">{net.status}</span>
-              {net.error && <span style={{ color: 'var(--bad)', fontSize: '0.85em' }}>{net.error}</span>}
-              {onPeer && <span className="ml-auto">Players online: <b>{net.count()}</b></span>}
+                  {marketSellItem && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="dim text-xs">Quantity to Sell (Max: {S.p?.inv?.[marketSellItem] || 1}):</label>
+                        <input
+                          type="number"
+                          min={1}
+                          max={S.p?.inv?.[marketSellItem] || 1}
+                          value={marketSellQty}
+                          className="input w-full"
+                          onChange={(e) => setMarketSellQty(Math.max(1, Math.min(S.p?.inv?.[marketSellItem] || 1, Number(e.target.value) || 1)))}
+                        />
+                      </div>
+                      <div>
+                        <label className="dim text-xs">Listing Price (Gold):</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={marketSellPrice}
+                          className="input w-full"
+                          onChange={(e) => setMarketSellPrice(Math.max(1, Number(e.target.value) || 1))}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  <Btn
+                    className="big self-end"
+                    style={{ background: '#2563eb' }}
+                    disabled={!marketSellItem}
+                    onClick={() => {
+                      net.sendMarketList(marketSellItem, marketSellQty, marketSellPrice);
+                      setMarketSellItem('');
+                    }}
+                  >
+                    List on Marketplace
+                  </Btn>
+                </div>
+              )}
+
+              {marketSubTab === 'my' && (
+                <div className="flex flex-col gap-1 max-h-72 overflow-y-auto">
+                  {(!S.market?.myListings || S.market.myListings.length === 0) && (
+                    <div className="dim p-4 text-center">You have no active or historical listings.</div>
+                  )}
+                  {(S.market?.myListings || []).map((l: any) => {
+                    const def = ITEMS[l.item_id];
+                    return (
+                      <div key={l.id} className="card p-2 flex justify-between items-center bg-black/20 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{iconOf(l.item_id)}</span>
+                          <div>
+                            <div className="font-bold text-slate-100">{def?.name || l.item_id} <span className="text-amber-400">x{l.qty}</span></div>
+                            <div className="dim text-xs capitalize">Status: <span className={l.status === 'sold' ? 'text-green-400 font-bold' : l.status === 'active' ? 'text-blue-400' : 'text-slate-400'}>{l.status}</span></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="font-bold text-yellow-400 text-sm">{l.price}g</span>
+                          {l.status === 'active' && (
+                            <Btn className="sm danger" onClick={() => net.sendMarketCancel(l.id)}>Cancel</Btn>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {!onPeer && (
-              <>
-                <div className="flex gap-2">
-                  <Btn className="flex-1" disabled={net.status === 'connecting'} onClick={() => net.host()}>🏰 Host a new world</Btn>
-                </div>
-                <div className="flex gap-2">
-                  <input className="input" placeholder="Enter 6-letter world code" value={code} maxLength={6} onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') net.join(code); }} />
-                  <Btn disabled={code.length < 4 || net.status === 'connecting'} onClick={() => net.join(code)}>Join</Btn>
-                </div>
-              </>
-            )}
-            {onPeer && (
-              <>
-                <div className="card p-3 text-center">
-                  <div className="dim" style={{ fontSize: '0.8em' }}>World code</div>
-                  <div className="title" style={{ fontSize: '2.2em', letterSpacing: '0.3em' }}>{net.code}</div>
-                  <div className="flex gap-2 justify-center mt-2">
-                    <Btn className="sm" onClick={() => { navigator.clipboard?.writeText(net.code); toast('Code copied.', 'info'); }}>Copy code</Btn>
-                    <Btn className="sm" onClick={() => { navigator.clipboard?.writeText(link); toast('Invite link copied.', 'info'); }}>Copy invite link</Btn>
+          )}
+
+          {tab === 'peer' && (
+            <div className="flex flex-col gap-3">
+              <div className="card p-3 flex items-center gap-2">
+                <span className="chip sel">{net.status}</span>
+                {net.error && <span style={{ color: 'var(--bad)', fontSize: '0.85em' }}>{net.error}</span>}
+                {onPeer && <span className="ml-auto">Players online: <b>{net.count()}</b></span>}
+              </div>
+              {!onPeer && (
+                <>
+                  <div className="flex gap-2">
+                    <Btn className="flex-1" disabled={net.status === 'connecting'} onClick={() => net.host()}>🏰 Host a new world</Btn>
                   </div>
-                </div>
-                <div className="card p-3">
-                  <div className="title mb-1">Players</div>
-                  <div>🧙 {S.p.name} (you)</div>
-                  {roster.map((r: any, i) => (
-                    <div key={i}>🧑 {r.name} <span className="dim">· Lv {r.level} {CLASSES.find((c) => c.id === r.cls)?.name}</span></div>
-                  ))}
-                  {roster.length === 0 && <div className="dim">Waiting for friends…</div>}
-                </div>
-                <Btn className="danger" onClick={() => { net.leave(); toast('Left multiplayer.', 'info'); }}>Leave world</Btn>
-              </>
-            )}
+                  <div className="flex gap-2">
+                    <input className="input" placeholder="Enter 6-letter world code" value={code} maxLength={6} onChange={(e) => setCode(e.target.value.toUpperCase())} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') net.join(code); }} />
+                    <Btn disabled={code.length < 4 || net.status === 'connecting'} onClick={() => net.join(code)}>Join</Btn>
+                  </div>
+                </>
+              )}
+              {onPeer && (
+                <>
+                  <div className="card p-3 text-center">
+                    <div className="dim" style={{ fontSize: '0.8em' }}>World code</div>
+                    <div className="title" style={{ fontSize: '2.2em', letterSpacing: '0.3em' }}>{net.code}</div>
+                    <div className="flex gap-2 justify-center mt-2">
+                      <Btn className="sm" onClick={() => { navigator.clipboard?.writeText(net.code); toast('Code copied.', 'info'); }}>Copy code</Btn>
+                      <Btn className="sm" onClick={() => { navigator.clipboard?.writeText(link); toast('Invite link copied.', 'info'); }}>Copy invite link</Btn>
+                    </div>
+                  </div>
+                  <div className="card p-3">
+                    <div className="title mb-1">Players</div>
+                    <div>🧙 {S.p.name} (you)</div>
+                    {roster.map((r: any, i) => (
+                      <div key={i}>🧑 {r.name} <span className="dim">· Lv {r.level} {CLASSES.find((c) => c.id === r.cls)?.name}</span></div>
+                    ))}
+                    {roster.length === 0 && <div className="dim">Waiting for friends…</div>}
+                  </div>
+                  <Btn className="danger" onClick={() => { net.leave(); toast('Left multiplayer.', 'info'); }}>Leave world</Btn>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </Window>
+  );
+}
+
+export function InspectModal() {
+  useUI();
+  const p = S.inspectTarget;
+  if (!p || !S.ui.inspect) return null;
+  const cls = CLASSES.find((c) => c.id === p.cls);
+
+  return (
+    <Window title={`Inspect: ${p.name}`} icon="🔍" onClose={() => { S.ui.inspect = false; S.inspectTarget = null; emitUI(); }} w="min(520px,96vw)" h="auto">
+      <div className="p-4 flex flex-col gap-3">
+        <div className="card p-3 flex items-center gap-3">
+          <div className="flex items-center justify-center text-3xl" style={{ width: 52, height: 52, borderRadius: 12, background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3b82f6' }}>
+            {cls?.icon || '🧙'}
           </div>
-        )}
+          <div className="flex flex-col">
+            <div className="title text-lg">{p.name}</div>
+            <div className="dim text-xs">Level {p.level} {cls?.name || p.cls} {p.guild_name && <span className="text-amber-300 font-semibold">[{p.guild_tag}] &lt;{p.guild_name}&gt;</span>}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2 text-center text-xs">
+          <div className="card p-2">
+            <div className="dim text-red-400 font-bold">Health</div>
+            <div className="font-bold text-sm">{Math.ceil(p.hp)} / {p.max_hp}</div>
+          </div>
+          <div className="card p-2">
+            <div className="dim text-blue-400 font-bold">Mana</div>
+            <div className="font-bold text-sm">{Math.ceil(p.mana)} / {p.max_mana}</div>
+          </div>
+          <div className="card p-2">
+            <div className="dim text-green-400 font-bold">Stamina</div>
+            <div className="font-bold text-sm">{Math.ceil(p.stamina)} / {p.max_stamina}</div>
+          </div>
+        </div>
+
+        <div className="card p-3 flex flex-col gap-1">
+          <div className="dim text-xs font-semibold mb-1">Equipped Gear:</div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {Object.entries(p.equip || {}).map(([slot, itemId]) => {
+              const def = ITEMS[itemId as string];
+              return (
+                <div key={slot} className="flex items-center gap-1.5 p-1 bg-black/20 rounded">
+                  <span className="dim capitalize w-14">{slot}:</span>
+                  <span className="font-semibold text-slate-200">{iconOf(itemId as string)} {def?.name || itemId}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex gap-2 justify-end pt-2 border-t border-line">
+          <Btn onClick={() => { net.sendChat(`/w ${p.name} `); S.ui.chat = true; S.ui.inspect = false; emitUI(); }}>💬 Whisper</Btn>
+          <Btn onClick={() => { net.sendPartyInvite(p.name); toast(`Invited ${p.name} to party`, 'info'); }}>🛡️ Invite to Party</Btn>
+          <Btn onClick={() => { net.sendFriendReq(p.name); }}>🤝 Add Friend</Btn>
+        </div>
       </div>
     </Window>
   );

@@ -12,4 +12,5 @@ run "ui" tests/ui.test.tsx --jsx=automatic
 run "play" tests/play.test.ts --alias:three=./tests/three-stub.ts
 run "multiplayer" tests/multiplayer.test.ts --alias:three=./tests/three-stub.ts --external:peerjs
 run "mmo_server" tests/mmo_server.test.ts --external:ws
+run "mmo_milestones" tests/mmo_milestones.test.ts --external:ws
 run "mmo_load" tests/mmo_load.test.ts --external:ws

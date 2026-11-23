@@ -60,6 +60,49 @@ export interface GuildMember {
   joined_at: number;
 }
 
+export interface MarketListing {
+  id: string;
+  seller_id: string;
+  seller_name: string;
+  item_id: string;
+  qty: number;
+  price: number;
+  status: 'active' | 'sold' | 'cancelled' | 'expired';
+  buyer_id?: string;
+  buyer_name?: string;
+  created_at: number;
+  sold_at?: number;
+}
+
+export interface PersistentHouse {
+  house_id: string;
+  owner_id: string;
+  owner_name: string;
+  level: number;
+  furniture: any[];
+  storage: Record<string, number>;
+  updated_at: number;
+}
+
+export interface PublicProfile {
+  id: string;
+  name: string;
+  cls: string;
+  level: number;
+  hp: number;
+  max_hp: number;
+  mana: number;
+  max_mana: number;
+  stamina: number;
+  max_stamina: number;
+  gold: number;
+  look: any;
+  equip: any;
+  guild_id: string | null;
+  guild_name?: string;
+  guild_tag?: string;
+}
+
 function hashPassword(password: string): string {
   return crypto.createHash('sha256').update(password + '_aetherfall_salt').digest('hex');
 }
@@ -161,9 +204,52 @@ export class DB {
         created_at INTEGER
       );
 
+      CREATE TABLE IF NOT EXISTS marketplace_listings (
+        id TEXT PRIMARY KEY,
+        seller_id TEXT NOT NULL,
+        seller_name TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        qty INTEGER NOT NULL DEFAULT 1,
+        price INTEGER NOT NULL DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'active',
+        buyer_id TEXT,
+        buyer_name TEXT,
+        created_at INTEGER NOT NULL,
+        sold_at INTEGER
+      );
+
+      CREATE TABLE IF NOT EXISTS houses (
+        house_id TEXT PRIMARY KEY,
+        owner_id TEXT NOT NULL,
+        owner_name TEXT NOT NULL,
+        level INTEGER NOT NULL DEFAULT 1,
+        furniture_json TEXT NOT NULL DEFAULT '[]',
+        storage_json TEXT NOT NULL DEFAULT '{}',
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS world_state (
+        key TEXT PRIMARY KEY,
+        value_json TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS reports (
+        id TEXT PRIMARY KEY,
+        reporter_id TEXT NOT NULL,
+        reporter_name TEXT NOT NULL,
+        reported_id TEXT NOT NULL,
+        reported_name TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        details TEXT,
+        created_at INTEGER NOT NULL
+      );
+
       CREATE INDEX IF NOT EXISTS idx_char_account ON characters(account_id);
       CREATE INDEX IF NOT EXISTS idx_char_name ON characters(name);
       CREATE INDEX IF NOT EXISTS idx_guild_name ON guilds(name);
+      CREATE INDEX IF NOT EXISTS idx_market_status ON marketplace_listings(status);
+      CREATE INDEX IF NOT EXISTS idx_market_seller ON marketplace_listings(seller_id);
     `);
   }
 
@@ -328,6 +414,21 @@ export class DB {
     };
   }
 
+  getInventory(characterId: string): Record<string, number> {
+    const ch = this.getCharacterById(characterId);
+    return ch ? { ...ch.inventory } : {};
+  }
+
+  saveInventory(characterId: string, inv: Record<string, number>) {
+    this.db.prepare('UPDATE characters SET inventory = ?, updated_at = ? WHERE id = ?')
+      .run(JSON.stringify(inv), Date.now(), characterId);
+  }
+
+  updateGold(characterId: string, gold: number) {
+    this.db.prepare('UPDATE characters SET gold = ?, updated_at = ? WHERE id = ?')
+      .run(gold, Date.now(), characterId);
+  }
+
   // --- Guild methods
   createGuild(name: string, tag: string, leaderId: string): Guild {
     name = name.trim();
@@ -398,6 +499,297 @@ export class DB {
       INSERT INTO trade_logs (id, from_char, to_char, from_items, to_items, from_gold, to_gold, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, fromChar, toChar, JSON.stringify(fromItems), JSON.stringify(toItems), fromGold, toGold, Date.now());
+  }
+
+  // --- Marketplace / Auction House
+  createMarketListing(sellerId: string, sellerName: string, itemId: string, qty: number, price: number): MarketListing {
+    qty = Math.max(1, Math.floor(qty));
+    price = Math.max(1, Math.floor(price));
+    const inv = this.getInventory(sellerId);
+    if (!inv[itemId] || inv[itemId] < qty) {
+      throw new Error(`Insufficient inventory: you do not have ${qty}x ${itemId}`);
+    }
+
+    inv[itemId] -= qty;
+    if (inv[itemId] <= 0) delete inv[itemId];
+    this.saveInventory(sellerId, inv);
+
+    const id = 'mkt_' + crypto.randomUUID().slice(0, 10);
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO marketplace_listings (id, seller_id, seller_name, item_id, qty, price, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+    `).run(id, sellerId, sellerName, itemId, qty, price, now);
+
+    return { id, seller_id: sellerId, seller_name: sellerName, item_id: itemId, qty, price, status: 'active', created_at: now };
+  }
+
+  buyMarketListing(buyerId: string, buyerName: string, listingId: string): { listing: MarketListing; buyerGold: number; sellerGold: number } {
+    const stmt = this.db.prepare('SELECT * FROM marketplace_listings WHERE id = ? AND status = ?');
+    const row = stmt.get(listingId, 'active') as any;
+    if (!row) {
+      throw new Error('Listing is no longer active or does not exist');
+    }
+    if (row.seller_id === buyerId) {
+      throw new Error('You cannot buy your own listing');
+    }
+
+    const buyer = this.getCharacterById(buyerId);
+    if (!buyer) throw new Error('Buyer character not found');
+    if (buyer.gold < row.price) {
+      throw new Error(`Insufficient gold: listing costs ${row.price}g, but you have ${buyer.gold}g`);
+    }
+
+    const seller = this.getCharacterById(row.seller_id);
+    if (!seller) throw new Error('Seller character not found');
+
+    const buyerGold = buyer.gold - row.price;
+    const sellerGold = seller.gold + row.price;
+    this.updateGold(buyerId, buyerGold);
+    this.updateGold(row.seller_id, sellerGold);
+
+    const buyerInv = this.getInventory(buyerId);
+    buyerInv[row.item_id] = (buyerInv[row.item_id] || 0) + row.qty;
+    this.saveInventory(buyerId, buyerInv);
+
+    const now = Date.now();
+    this.db.prepare(`
+      UPDATE marketplace_listings
+      SET status = 'sold', buyer_id = ?, buyer_name = ?, sold_at = ?
+      WHERE id = ?
+    `).run(buyerId, buyerName, now, listingId);
+
+    this.logTrade(row.seller_id, buyerId, { [row.item_id]: row.qty }, {}, 0, row.price);
+
+    const listing: MarketListing = {
+      id: row.id,
+      seller_id: row.seller_id,
+      seller_name: row.seller_name,
+      item_id: row.item_id,
+      qty: Number(row.qty),
+      price: Number(row.price),
+      status: 'sold',
+      buyer_id: buyerId,
+      buyer_name: buyerName,
+      created_at: Number(row.created_at),
+      sold_at: now
+    };
+
+    return { listing, buyerGold, sellerGold };
+  }
+
+  cancelMarketListing(sellerId: string, listingId: string): MarketListing {
+    const stmt = this.db.prepare('SELECT * FROM marketplace_listings WHERE id = ? AND status = ? AND seller_id = ?');
+    const row = stmt.get(listingId, 'active', sellerId) as any;
+    if (!row) {
+      throw new Error('Listing not found or cannot be cancelled');
+    }
+
+    this.db.prepare("UPDATE marketplace_listings SET status = 'cancelled' WHERE id = ?").run(listingId);
+
+    const inv = this.getInventory(sellerId);
+    inv[row.item_id] = (inv[row.item_id] || 0) + Number(row.qty);
+    this.saveInventory(sellerId, inv);
+
+    return {
+      id: row.id,
+      seller_id: row.seller_id,
+      seller_name: row.seller_name,
+      item_id: row.item_id,
+      qty: Number(row.qty),
+      price: Number(row.price),
+      status: 'cancelled',
+      created_at: Number(row.created_at)
+    };
+  }
+
+  getActiveMarketListings(search?: string, limit = 50): MarketListing[] {
+    let query = "SELECT * FROM marketplace_listings WHERE status = 'active'";
+    const params: any[] = [];
+    if (search && search.trim()) {
+      query += ' AND item_id LIKE ?';
+      params.push(`%${search.trim().toLowerCase()}%`);
+    }
+    query += ' ORDER BY price ASC LIMIT ?';
+    params.push(limit);
+
+    const stmt = this.db.prepare(query);
+    const rows = stmt.all(...params) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      seller_id: r.seller_id,
+      seller_name: r.seller_name,
+      item_id: r.item_id,
+      qty: Number(r.qty),
+      price: Number(r.price),
+      status: r.status,
+      created_at: Number(r.created_at)
+    }));
+  }
+
+  getMyMarketListings(sellerId: string): MarketListing[] {
+    const stmt = this.db.prepare('SELECT * FROM marketplace_listings WHERE seller_id = ? ORDER BY created_at DESC LIMIT 50');
+    const rows = stmt.all(sellerId) as any[];
+    return rows.map((r) => ({
+      id: r.id,
+      seller_id: r.seller_id,
+      seller_name: r.seller_name,
+      item_id: r.item_id,
+      qty: Number(r.qty),
+      price: Number(r.price),
+      status: r.status,
+      buyer_id: r.buyer_id,
+      buyer_name: r.buyer_name,
+      created_at: Number(r.created_at),
+      sold_at: r.sold_at ? Number(r.sold_at) : undefined
+    }));
+  }
+
+  // --- Persistent Housing
+  getHouse(houseId: string): PersistentHouse | null {
+    const stmt = this.db.prepare('SELECT * FROM houses WHERE house_id = ?');
+    const row = stmt.get(houseId) as any;
+    if (!row) return null;
+    return {
+      house_id: row.house_id,
+      owner_id: row.owner_id,
+      owner_name: row.owner_name,
+      level: Number(row.level),
+      furniture: JSON.parse(row.furniture_json || '[]'),
+      storage: JSON.parse(row.storage_json || '{}'),
+      updated_at: Number(row.updated_at)
+    };
+  }
+
+  saveHouse(houseId: string, ownerId: string, ownerName: string, level: number, furniture: any[], storage: Record<string, number>): PersistentHouse {
+    const now = Date.now();
+    const furnJson = JSON.stringify(furniture || []);
+    const storJson = JSON.stringify(storage || {});
+    this.db.prepare(`
+      INSERT INTO houses (house_id, owner_id, owner_name, level, furniture_json, storage_json, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(house_id) DO UPDATE SET
+        owner_id = excluded.owner_id,
+        owner_name = excluded.owner_name,
+        level = excluded.level,
+        furniture_json = excluded.furniture_json,
+        storage_json = excluded.storage_json,
+        updated_at = excluded.updated_at
+    `).run(houseId, ownerId, ownerName, level, furnJson, storJson, now);
+
+    return { house_id: houseId, owner_id: ownerId, owner_name: ownerName, level, furniture, storage, updated_at: now };
+  }
+
+  getAllHouses(): PersistentHouse[] {
+    const stmt = this.db.prepare('SELECT * FROM houses');
+    const rows = stmt.all() as any[];
+    return rows.map((row) => ({
+      house_id: row.house_id,
+      owner_id: row.owner_id,
+      owner_name: row.owner_name,
+      level: Number(row.level),
+      furniture: JSON.parse(row.furniture_json || '[]'),
+      storage: JSON.parse(row.storage_json || '{}'),
+      updated_at: Number(row.updated_at)
+    }));
+  }
+
+  // --- World State Persistence
+  getWorldState(key: string): any | null {
+    const stmt = this.db.prepare('SELECT value_json FROM world_state WHERE key = ?');
+    const row = stmt.get(key) as any;
+    if (!row) return null;
+    try {
+      return JSON.parse(row.value_json);
+    } catch {
+      return null;
+    }
+  }
+
+  setWorldState(key: string, value: any) {
+    const json = JSON.stringify(value);
+    const now = Date.now();
+    this.db.prepare(`
+      INSERT INTO world_state (key, value_json, updated_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value_json = excluded.value_json,
+        updated_at = excluded.updated_at
+    `).run(key, json, now);
+  }
+
+  // --- Friends System
+  addFriend(charId: string, friendId: string) {
+    if (charId === friendId) throw new Error('Cannot add yourself as a friend');
+    const now = Date.now();
+    this.db.prepare('INSERT OR REPLACE INTO friends (character_id, friend_character_id, status, created_at) VALUES (?, ?, ?, ?)')
+      .run(charId, friendId, 'accepted', now);
+    this.db.prepare('INSERT OR REPLACE INTO friends (character_id, friend_character_id, status, created_at) VALUES (?, ?, ?, ?)')
+      .run(friendId, charId, 'accepted', now);
+  }
+
+  removeFriend(charId: string, friendId: string) {
+    this.db.prepare('DELETE FROM friends WHERE (character_id = ? AND friend_character_id = ?) OR (character_id = ? AND friend_character_id = ?)')
+      .run(charId, friendId, friendId, charId);
+  }
+
+  getFriends(charId: string): any[] {
+    const stmt = this.db.prepare(`
+      SELECT f.friend_character_id as id, c.name, c.cls, c.level, c.hp, f.created_at
+      FROM friends f
+      JOIN characters c ON f.friend_character_id = c.id
+      WHERE f.character_id = ?
+    `);
+    const rows = stmt.all(charId) as any[];
+    return rows.map((r) => ({
+      ...r,
+      max_hp: 100 + (Number(r.level) - 1) * 15
+    }));
+  }
+
+  // --- Player Inspection
+  getPublicProfile(charIdOrName: string): PublicProfile | null {
+    let ch = this.getCharacterById(charIdOrName);
+    if (!ch) ch = this.getCharacterByName(charIdOrName);
+    if (!ch) return null;
+
+    let guildName: string | undefined;
+    let guildTag: string | undefined;
+    if (ch.guild_id) {
+      const g = this.getGuild(ch.guild_id);
+      if (g) {
+        guildName = g.name;
+        guildTag = g.tag;
+      }
+    }
+
+    return {
+      id: ch.id,
+      name: ch.name,
+      cls: ch.cls,
+      level: ch.level,
+      hp: ch.hp,
+      max_hp: 100 + (ch.level - 1) * 15,
+      mana: ch.mana,
+      max_mana: 50 + (ch.level - 1) * 10,
+      stamina: ch.sta,
+      max_stamina: 100 + (ch.level - 1) * 10,
+      gold: ch.gold,
+      look: JSON.parse(ch.look_json || '{}'),
+      equip: JSON.parse(ch.equip_json || '{}'),
+      guild_id: ch.guild_id,
+      guild_name: guildName,
+      guild_tag: guildTag
+    };
+  }
+
+  // --- Moderation & Reports
+  createReport(reporterId: string, reporterName: string, reportedId: string, reportedName: string, reason: string, details?: string) {
+    const id = 'rep_' + crypto.randomUUID().slice(0, 10);
+    this.db.prepare(`
+      INSERT INTO reports (id, reporter_id, reporter_name, reported_id, reported_name, reason, details, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, reporterId, reporterName, reportedId, reportedName, reason, details || '', Date.now());
   }
 
   close() {

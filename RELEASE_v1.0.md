@@ -220,6 +220,7 @@ Running `bash tests/run.sh` executes the complete suite across all project domai
 | **Play** | `tests/play.test.ts` | 74 | PASS (0 failures) | Full Gameplay Loop, Combat, Dungeons, Endings |
 | **P2P Multiplayer** | `tests/multiplayer.test.ts` | 30 | PASS (0 failures) | WebRTC Co-op, Sync, Interpolation, Fallback |
 | **MMO Server** | `tests/mmo_server.test.ts` | 31 | PASS (0 failures) | Authoritative DB, Combat, Parties, Trading, Instances |
+| **MMO Milestones 1–5** | `tests/mmo_milestones.test.ts` | 26 | PASS (0 failures) | Social, Friends, Inspect, Market, Events, LFG, Housing |
 | **MMO Load** | `tests/mmo_load.test.ts` | 4 stages (2, 10, 25, 50) | PASS (0 failures) | TPS, Latency, Bandwidth, Memory SLA |
 
 ---

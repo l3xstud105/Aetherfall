@@ -17,9 +17,25 @@ export interface TradeSession {
   state: 'negotiating' | 'locked' | 'completed' | 'cancelled';
 }
 
+export interface LfgEntry {
+  charId: string;
+  charName: string;
+  cls: string;
+  level: number;
+  dungeon: string;
+  queuedAt: number;
+}
+
+const FILTERED_WORDS = ['hate', 'nazi', 'racist', 'slur'];
+
 function sanitize(text: string, maxLen = 140): string {
   if (typeof text !== 'string') return '';
-  return text.replace(/[<>]/g, '').trim().slice(0, maxLen);
+  let clean = text.replace(/[<>]/g, '').trim().slice(0, maxLen);
+  FILTERED_WORDS.forEach((w) => {
+    const reg = new RegExp('\\b' + w + '\\b', 'gi');
+    clean = clean.replace(reg, '***');
+  });
+  return clean;
 }
 
 export class SocialManager {
@@ -31,11 +47,157 @@ export class SocialManager {
   activeTrades = new Map<string, TradeSession>(); // tradeId -> TradeSession
   playerTrade = new Map<string, string>(); // charId -> tradeId
 
+  lfgQueue = new Map<string, LfgEntry>(); // charId -> LfgEntry
   private chatRateLimit = new Map<string, number>(); // charId -> lastMsgTime
 
   constructor(world: WorldSimulation, db: DB) {
     this.world = world;
     this.db = db;
+  }
+
+  // --- Friends System
+  sendFriendsList(player: ServerPlayer) {
+    const rawFriends = this.db.getFriends(player.char.id);
+    const friends = rawFriends.map((f: any) => {
+      const isOnline = this.world.players.has(f.id);
+      const onlineP = isOnline ? this.world.players.get(f.id) : null;
+      return {
+        id: f.id,
+        name: f.name,
+        cls: f.cls,
+        level: f.level,
+        online: isOnline,
+        zone: onlineP?.zone || 'offline',
+        hp: onlineP ? onlineP.char.hp : f.hp,
+        maxHp: onlineP ? onlineP.char.max_hp : f.max_hp
+      };
+    });
+
+    if (player.ws.readyState === 1) {
+      player.ws.send(JSON.stringify({ t: 'friends_list', friends }));
+    }
+  }
+
+  handleFriendReq(sender: ServerPlayer, targetName: string) {
+    targetName = targetName.trim();
+    if (!targetName || targetName.toLowerCase() === sender.char.name.toLowerCase()) {
+      sender.ws.send(JSON.stringify({ t: 'chat_msg', channel: 'system', from: 'System', text: 'Invalid friend target.' }));
+      return;
+    }
+
+    const targetChar = this.db.getCharacterByName(targetName);
+    if (!targetChar) {
+      sender.ws.send(JSON.stringify({ t: 'chat_msg', channel: 'system', from: 'System', text: `Player "${targetName}" not found.` }));
+      return;
+    }
+
+    this.db.addFriend(sender.char.id, targetChar.id);
+    this.sendFriendsList(sender);
+
+    const onlineTarget = this.world.players.get(targetChar.id);
+    if (onlineTarget) {
+      this.sendFriendsList(onlineTarget);
+      onlineTarget.ws.send(JSON.stringify({
+        t: 'chat_msg',
+        channel: 'system',
+        from: 'System',
+        text: `You and ${sender.char.name} are now friends!`
+      }));
+    }
+
+    sender.ws.send(JSON.stringify({
+      t: 'chat_msg',
+      channel: 'system',
+      from: 'System',
+      text: `Added ${targetChar.name} to your friends list.`
+    }));
+  }
+
+  handleFriendRemove(player: ServerPlayer, friendId: string) {
+    this.db.removeFriend(player.char.id, friendId);
+    this.sendFriendsList(player);
+    const onlineFriend = this.world.players.get(friendId);
+    if (onlineFriend) this.sendFriendsList(onlineFriend);
+  }
+
+  // --- Player Inspection
+  handleInspect(player: ServerPlayer, targetNameOrId: string) {
+    const profile = this.db.getPublicProfile(targetNameOrId);
+    if (!profile) {
+      player.ws.send(JSON.stringify({ t: 'chat_msg', channel: 'system', from: 'System', text: 'Could not inspect player profile.' }));
+      return;
+    }
+    if (player.ws.readyState === 1) {
+      player.ws.send(JSON.stringify({ t: 'inspect_data', profile }));
+    }
+  }
+
+  // --- LFG / Matchmaking System
+  handleLfgJoin(player: ServerPlayer, dungeon: string) {
+    this.lfgQueue.set(player.char.id, {
+      charId: player.char.id,
+      charName: player.char.name,
+      cls: player.char.cls,
+      level: player.char.level,
+      dungeon,
+      queuedAt: Date.now()
+    });
+
+    player.ws.send(JSON.stringify({
+      t: 'lfg_status',
+      status: 'queued',
+      dungeon,
+      queueSize: [...this.lfgQueue.values()].filter((q) => q.dungeon === dungeon).length
+    }));
+
+    // Check for match: 2+ players queued for same dungeon
+    const matched = [...this.lfgQueue.values()].filter((q) => q.dungeon === dungeon);
+    if (matched.length >= 2) {
+      const matchPair = matched.slice(0, 2);
+      matchPair.forEach((m) => this.lfgQueue.delete(m.charId));
+
+      const p1 = this.world.players.get(matchPair[0].charId);
+      const p2 = this.world.players.get(matchPair[1].charId);
+
+      if (p1 && p2) {
+        // Form a party
+        const party = this.createParty(p1);
+        this.joinParty(p2, party.id);
+
+        const matchMsg = {
+          t: 'lfg_matched',
+          dungeon,
+          partyId: party.id,
+          members: matchPair.map((m) => m.charName)
+        };
+        if (p1.ws.readyState === 1) p1.ws.send(JSON.stringify(matchMsg));
+        if (p2.ws.readyState === 1) p2.ws.send(JSON.stringify(matchMsg));
+      }
+    }
+  }
+
+  handleLfgLeave(player: ServerPlayer) {
+    this.lfgQueue.delete(player.char.id);
+    if (player.ws.readyState === 1) {
+      player.ws.send(JSON.stringify({ t: 'lfg_status', status: 'idle' }));
+    }
+  }
+
+  // --- Moderation & Reporting
+  handleReport(reporter: ServerPlayer, targetName: string, reason: string, details?: string) {
+    const target = this.db.getCharacterByName(targetName.trim());
+    if (!target) {
+      reporter.ws.send(JSON.stringify({ t: 'chat_msg', channel: 'system', from: 'System', text: `Player "${targetName}" not found.` }));
+      return;
+    }
+
+    this.db.createReport(reporter.char.id, reporter.char.name, target.id, target.name, sanitize(reason, 100), sanitize(details || '', 300));
+    reporter.ws.send(JSON.stringify({
+      t: 'chat_msg',
+      channel: 'system',
+      from: 'System',
+      text: `Report for player "${target.name}" has been logged for moderator review.`
+    }));
   }
 
   // --- Chat Channels

@@ -83,6 +83,18 @@ export function Hud() {
         )}
       </div>
       <div className="absolute left-1/2 top-3 -translate-x-1/2 flex flex-col items-center gap-1"><Compass /><div className="dim" style={{ fontSize: '0.8em', textShadow: '0 1px 3px #000' }}>{h.region} · {h.time} · {h.weather}{S.settings.showFps ? ` · ${h.fps} fps` : ''}</div>
+        {S.worldEvent && (
+          <div className="panel anim-pop px-4 py-2 mt-2 flex flex-col items-center gap-1 pointer-events-auto" style={{ width: 440, borderRadius: 14, background: 'rgba(20, 10, 30, 0.9)', border: '1px solid #c084fc', boxShadow: '0 0 12px rgba(192, 132, 252, 0.3)' }}>
+            <div className="flex justify-between items-center w-full">
+              <span className="text-purple-300 font-bold text-xs tracking-wider">⚔️ WORLD EVENT: {S.worldEvent.title}</span>
+              <span className="text-amber-300 font-mono text-xs">{S.worldEvent.remainingSec}s</span>
+            </div>
+            <div className="dim text-xs text-center">{S.worldEvent.desc}</div>
+            <div className="w-full mt-1">
+              <Bar v={S.worldEvent.currentCount} max={S.worldEvent.targetCount} color="linear-gradient(90deg, #9333ea, #c084fc)" label={`${S.worldEvent.currentCount} / ${S.worldEvent.targetCount}`} />
+            </div>
+          </div>
+        )}
         {h.boss && <div className="panel anim-pop px-4 py-2 mt-3" style={{ width: 520, borderRadius: 16 }}><div className="title text-center" style={{ fontSize: '1.1em' }}>{h.boss.name}</div><div className="dim text-center" style={{ fontSize: '0.75em', marginBottom: 4 }}>{h.boss.title}</div><Bar v={h.boss.hp} max={h.boss.max} color="linear-gradient(90deg,#7a1a1a,#e04040)" /></div>}
         {h.target && !h.boss && <div className="panel anim-pop px-3 py-1.5 mt-3" style={{ width: 260, borderRadius: 14 }}><div className="text-center" style={{ fontSize: '0.85em' }}>{h.target.name}</div><Bar v={h.target.hp} max={h.target.max} color="linear-gradient(90deg,#8a2a2a,#e86a5a)" /></div>}</div>
       <div className="absolute right-4 top-4 flex flex-col items-end gap-2"><Minimap />

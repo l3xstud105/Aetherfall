@@ -6,7 +6,7 @@ import { audio } from './game/audio';
 import { Codex } from './ui/Codex';
 import { Confirm, DeadScreen, Hud, PauseMenu } from './ui/Hud';
 import { Creator, Ending, Intro, MainMenu, Settings } from './ui/Menus';
-import { Dialogue, HouseEdit, HouseSale, Multiplayer, Shop, Stable, Storage, TradeWindow } from './ui/Panels';
+import { Dialogue, HouseEdit, HouseSale, InspectModal, Multiplayer, Shop, Stable, Storage, TradeWindow } from './ui/Panels';
 import { TipHost } from './ui/ui';
 import { Website } from './ui/Website';
 
@@ -60,6 +60,7 @@ export default function App() {
         {sc === 'game' && ui.dead && <DeadScreen />}
         {ui.mp && <Multiplayer />}
         {sc === 'game' && ui.trade && <TradeWindow />}
+        {sc === 'game' && ui.inspect && <InspectModal />}
         {sc === 'ending' && <Ending />}
         {ui.settings && <Settings />}
         <Confirm />

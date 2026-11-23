@@ -217,6 +217,74 @@ export class Net {
         emitUI();
         break;
       }
+      case 'friends_list': {
+        S.friends = m.friends || [];
+        emitUI();
+        break;
+      }
+      case 'inspect_data': {
+        S.inspectTarget = m.profile;
+        S.ui.inspect = true;
+        emitUI();
+        break;
+      }
+      case 'lfg_status': {
+        S.lfg = { status: m.status, dungeon: m.dungeon, queueSize: m.queueSize || 0 };
+        emitUI();
+        break;
+      }
+      case 'lfg_matched': {
+        toast(`Match Found for ${m.dungeon}! Entering dungeon group...`, 'unlock');
+        S.lfg = { status: 'matched', dungeon: m.dungeon, queueSize: 0 };
+        emitUI();
+        break;
+      }
+      case 'market_listings': {
+        S.market.listings = m.listings || [];
+        emitUI();
+        break;
+      }
+      case 'market_my_listings': {
+        S.market.myListings = m.listings || [];
+        emitUI();
+        break;
+      }
+      case 'market_listed': {
+        toast('Item listed on Marketplace!', 'unlock');
+        emitUI();
+        break;
+      }
+      case 'market_bought': {
+        toast(`Purchased ${m.listing.item_id}!`, 'unlock');
+        emitUI();
+        break;
+      }
+      case 'market_cancelled': {
+        toast('Listing cancelled. Item returned to inventory.', 'info');
+        emitUI();
+        break;
+      }
+      case 'market_err': {
+        toast(m.error || 'Marketplace error', 'error');
+        break;
+      }
+      case 'world_event_start': {
+        S.worldEvent = m.event;
+        toast(`⚔️ WORLD EVENT: ${m.event.title}!`, 'discover');
+        emitUI();
+        break;
+      }
+      case 'world_event_update': {
+        S.worldEvent = m.event;
+        emitUI();
+        break;
+      }
+      case 'world_event_end': {
+        toast(m.msg || 'World event ended.', m.result === 'victory' ? 'unlock' : 'info');
+        S.worldEvent = null;
+        emitUI();
+        break;
+      }
     }
   }
 
@@ -556,6 +624,83 @@ export class Net {
   sendPartyLeave() {
     if (this.isRealm && this.realmWs?.readyState === 1) {
       this.realmWs.send(JSON.stringify({ t: 'party_leave' }));
+    }
+  }
+
+  // --- Friends System
+  requestFriendsList() {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'friends_get' }));
+    }
+  }
+
+  sendFriendReq(targetName: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'friend_req', targetName }));
+    }
+  }
+
+  sendFriendRemove(friendId: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'friend_remove', friendId }));
+    }
+  }
+
+  // --- Player Inspection
+  requestInspect(target: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'inspect_req', target }));
+    }
+  }
+
+  // --- LFG / Matchmaking
+  sendLfgJoin(dungeon: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'lfg_join', dungeon }));
+    }
+  }
+
+  sendLfgLeave() {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'lfg_leave' }));
+    }
+  }
+
+  // --- Moderation & Reporting
+  sendReport(targetName: string, reason: string, details?: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'report', targetName, reason, details }));
+    }
+  }
+
+  // --- Marketplace / Auction House
+  requestMarketBrowse(search?: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'market_browse', search }));
+    }
+  }
+
+  requestMyMarketListings() {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'market_my_listings' }));
+    }
+  }
+
+  sendMarketList(itemId: string, qty: number, price: number) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'market_list', itemId, qty, price }));
+    }
+  }
+
+  sendMarketBuy(listingId: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'market_buy', listingId }));
+    }
+  }
+
+  sendMarketCancel(listingId: string) {
+    if (this.isRealm && this.realmWs?.readyState === 1) {
+      this.realmWs.send(JSON.stringify({ t: 'market_cancel', listingId }));
     }
   }
 
