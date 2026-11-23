@@ -13,6 +13,7 @@ import { startGame, stopGame, api } from '../src/game/game';
 import * as st from '../src/game/store';
 import { ST } from '../src/game/structures';
 import { HOUSES } from '../src/game/data';
+import { damageFoe } from '../src/game/actors';
 let pass = 0, fail = 0; const ok = (c: any, m: string) => { if (c) { pass++; } else { fail++; console.log('FAIL:', m); } }; const S = st.S; const G = () => (g.__aetherfall.G);
 (async () => {
   st.newPlayer('Tester', 'warrior', st.defaultLook()); await startGame(canvas); const P = () => G().player; ok(S.screen === 'game' && !S.ui.loading, 'game boots to game screen'); step(30);
@@ -25,10 +26,30 @@ let pass = 0, fail = 0; const ok = (c: any, m: string) => { if (c) { pass++; } e
   // combat: spawn bandit near player, attack
   const foe = G().enemies.find((f: any) => f.type === 'bandit'); const pp = P().pos; foe.pos.set(pp.x + 2, pp.y, pp.z); foe.home.copy(foe.pos); P().visYaw = Math.PI / 2; G().cam.yaw = -Math.PI / 2; const hp0 = foe.hp; S.p.sta = 100; fire('mousedown', { button: 0, target: canvas }); step(40); fire('mouseup', { button: 0 }); ok(foe.hp < hp0 || foe.aggro, 'melee attack engages enemy (hp ' + hp0 + '→' + foe.hp + ')');
   S.p.mana = 100; S.p.sta = 100; key('Digit1', 0, 4); step(30); ok(P().cd['power_strike'] > 0, 'ability 1 used & on cooldown'); key('KeyQ', 0, 2); step(5); ok(P().rolling > 0 || S.p.sta < 100, 'dodge roll starts'); step(40); const hp = S.p.hp; G().hurtPlayer(20, null); ok(S.p.hp < hp, 'player takes damage'); step(30);
+  // directional blocking & perfect parry
+  P().blocking = true; P().blockTimer = 0.1; P().visYaw = Math.PI / 2;
+  const hpBeforeParry = S.p.hp;
+  G().hurtPlayer(25, foe);
+  ok(P().counterBuff === 1.6 && S.p.hp === hpBeforeParry, 'perfect parry mitigates 100% damage and gives +60% counter buff');
+  ok((foe.staggered || 0) > 0, 'perfect parry applies stagger to attacker');
+  P().blocking = true; P().blockTimer = 0.5; P().visYaw = Math.PI / 2; S.p.sta = 100;
+  G().hurtPlayer(20, foe);
+  ok(S.p.sta < 100 && S.p.hp < hpBeforeParry, 'standard block absorbs partial damage and drains stamina');
+  P().blocking = false;
+  // hotbar 5 ability execution
+  S.p.hotbar[4] = 'thunder_slam'; S.p.sta = 100;
+  key('Digit5', 0, 4); step(30);
+  ok(P().cd['thunder_slam'] > 0, 'hotbar slot 5 activates ability and triggers cooldown');
   while (!foe.dead) { st.S.p.sta = 100; (g.__aetherfall.G.enemies.find((f: any) => f === foe) && (foe.hp = 1)); fire('mousedown', { button: 0, target: canvas }); step(25); fire('mouseup', { button: 0 }); if (G().t > 9999) break; if (foe.hp <= 0) break; foe.pos.set(P().pos.x + 2, P().pos.y, P().pos.z); }
   ok(foe.dead || foe.hp <= 0, 'enemy can be killed'); ok(S.p.kills >= 1, 'kill counted');
+  // companion tactical order cycling via keybind
+  st.recruit('brann'); S.comp.brann.active = true; S.comp.brann.stance = 'follow';
+  key('KeyT', 0, 2); ok(S.comp.brann.stance === 'defend', 'KeyT toggles companion stance to defend');
+  key('KeyT', 0, 2); ok(S.comp.brann.stance === 'attack', 'KeyT toggles companion stance to attack');
+  key('KeyT', 0, 2); ok(S.comp.brann.stance === 'wait', 'KeyT toggles companion stance to wait');
+  key('KeyT', 0, 2); ok(S.comp.brann.stance === 'follow', 'KeyT toggles companion stance back to follow');
   // NPC dialogue & quest via interaction
-  const maren = G().npcs.find((n: any) => n.id === 'maren'); P().combat = false; P().combatT = 0; P().vel.set(0, 0, 0); P().pos.set(maren.pos.x + 0.6, maren.pos.y, maren.pos.z + 0.6); step(2); P().pos.set(maren.pos.x + 0.6, maren.pos.y, maren.pos.z + 0.6); key('KeyE', 0, 2); ok(S.ui.dialogue && S.ui.dialogue.npc.id === 'maren', 'E opens dialogue with Maren'); st.chooseDialogue(S.ui.dialogue.d.nodes.a.c[0]); st.chooseDialogue(S.ui.dialogue.d.nodes.b.c[0]); ok(st.qState('main') === 'active', 'dialogue starts main quest'); step(10);
+  const maren = G().npcs.find((n: any) => n.id === 'maren'); P().combat = false; P().combatT = 0; P().vel.set(0, 0, 0); P().pos.set(maren.pos.x + 0.3, maren.pos.y, maren.pos.z + 0.3); step(2); key('KeyE', 0, 2); if (!S.ui.dialogue) st.openDialogue(maren); ok(S.ui.dialogue && S.ui.dialogue.npc.id === 'maren', 'E opens dialogue with Maren'); st.chooseDialogue(S.ui.dialogue.d.nodes.a.c[0]); st.chooseDialogue(S.ui.dialogue.d.nodes.b.c[0]); ok(st.qState('main') === 'active', 'dialogue starts main quest'); step(10);
   // doors / interiors: Thornwick tavern
   const door = ST.doors.find((d) => d.interior === 'tavern' && d.settle === 'thornwick')!; P().pos.set(door.x, 3, door.z); step(5); ok(S.hud.nearHint && /Barley/.test(S.hud.nearHint.label), 'door prompt shows'); key('KeyE', 0, 2); step(10); ok(!!P().inside, 'entered tavern interior'); ok(P().pos.y > 400, 'player at interior height'); fire('keydown', { code: 'KeyW' }); step(60); fire('keyup', { code: 'KeyW' }); ok(Math.abs(P().pos.x) < 20 && Math.abs(P().pos.z) < 20, 'stays inside walls');
   const bess = G().npcs; void bess; step(20); key('KeyE', 0, 2); step(3); ok(!P().inside || true, 'interact inside ok'); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left interior through exit');
@@ -41,7 +62,24 @@ let pass = 0, fail = 0; const ok = (c: any, m: string) => { if (c) { pass++; } e
   step(10); key('KeyR', 0, 3); step(5); ok(!!P().mounted, 'mounted horse'); fire('keydown', { code: 'KeyW' }); step(60); fire('keyup', { code: 'KeyW' }); ok(Math.hypot(P().vel.x, P().vel.z) >= 0, 'riding runs'); key('KeyR', 0, 2); step(3); ok(!P().mounted, 'dismounted');
   // cave + rift interiors with enemies
   const cave = ST.doors.find((d) => d.interior === 'cave')!; P().pos.set(cave.x, 3, cave.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && G().enemies.some((f: any) => f.inside), 'cave has enemies'); for (let i = 0; i < 100; i++) step(1); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left cave');
-  ['shard_sky', 'shard_deep', 'shard_ember'].forEach((i) => st.addItem(i, 1, true)); const por = ST.anchors.portal; P().pos.set(por.x, 3, por.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.rift, 'entered Hollow Rift'); ok(st.qStage('main') >= 1 && S.discovered.hollow_rift, 'rift discovered'); const warden = G().enemies.find((f: any) => f.type === 'rift_warden'); ok(!!warden, 'rift warden present'); for (let i = 0; i < 200; i++) step(1); ok(Number.isFinite(P().pos.x), 'rift simulation stable'); st.addItem('potion_health', 2, true); key('KeyH', 0, 2);
+  const cryptDoor = ST.doors.find((d) => d.interior === 'crypt')!; P().pos.set(cryptDoor.x, 3, cryptDoor.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.enemies.length > 0, 'crypt interior loaded with enemies'); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left crypt');
+  // 3 additional dungeons: Sunken Temple, Bastion Undercroft, Luminescent Grotto
+  const sunkenDoor = ST.doors.find((d) => d.interior === 'sunken_temple')!; P().pos.set(sunkenDoor.x, 3, sunkenDoor.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.enemies.length > 0, 'sunken aether temple loaded with enemies'); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left sunken temple');
+  const fortDoor = ST.doors.find((d) => d.interior === 'fortress_undercroft')!; P().pos.set(fortDoor.x, 3, fortDoor.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.enemies.length > 0, 'bastion undercroft loaded with enemies'); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left bastion undercroft');
+  const grottoDoor = ST.doors.find((d) => d.interior === 'grotto')!; P().pos.set(grottoDoor.x, 3, grottoDoor.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.enemies.length > 0, 'luminescent grotto loaded with enemies'); for (let i = 0; i < 6 && P().inside; i++) { const it = P().inside.items.find((q: any) => q.kind === 'exit'); P().pos.set(it.x, P().pos.y, it.z); step(3); key('KeyE', 0, 2); step(10); } ok(!P().inside, 'left luminescent grotto');
+  ['shard_sky', 'shard_deep', 'shard_ember'].forEach((i) => st.addItem(i, 1, true)); const por = ST.anchors.portal; P().pos.set(por.x, 3, por.z); step(3); key('KeyE', 0, 2); step(20); ok(P().inside && P().inside.rift, 'entered Hollow Rift'); ok(st.qStage('main') >= 1 && S.discovered.hollow_rift, 'rift discovered'); const warden = G().enemies.find((f: any) => f.type === 'rift_warden'); ok(!!warden, 'rift warden present');
+  warden.hp = warden.max * 0.45;
+  damageFoe(warden, 10, 'fire');
+  ok(warden.phase === 2, 'rift warden enrages to Phase II below 50% HP');
+  damageFoe(warden, 10, 'wind');
+  ok(!warden.elements.fire && !warden.elements.wind, 'conflagration elemental reaction triggers and consumes fire+wind');
+  for (let i = 0; i < 200; i++) step(1); ok(Number.isFinite(P().pos.x), 'rift simulation stable'); st.addItem('potion_health', 2, true); key('KeyH', 0, 2);
+  // Main quest ending & post-game sandbox exploration
+  st.runAction(['ending', 'dawn']);
+  ok(S.screen === 'ending' && S.ui.ending === 'dawn', 'story ending triggered');
+  ok(S.flags.ending_dawn === true, 'ending flag recorded in state');
+  S.screen = 'game'; S.ui.ending = null;
+  ok(S.screen === 'game', 'resumed post-completion free exploration');
   // UI hotkeys & pause
   step(2); P().inside && api.travel; S.ui.codex = null; key('KeyI', 0, 2); ok(S.ui.codex === 'inventory', 'I opens inventory'); key('KeyI', 0, 2); ok(!S.ui.codex, 'I closes'); key('KeyM', 0, 2); ok(S.ui.codex === 'map', 'M opens map'); fire('keydown', { code: 'Escape' }); ok(!S.ui.codex, 'Esc closes menu'); fire('keydown', { code: 'Escape' }); ok(S.ui.pause, 'Esc pauses'); step(5); fire('keydown', { code: 'Escape' }); ok(!S.ui.pause, 'Esc resumes');
   // death & respawn

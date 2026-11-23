@@ -64,6 +64,23 @@ export function Hud() {
             <div style={{ marginTop: 3 }}><Bar v={p.xp} max={Math.round(90 * Math.pow(p.level, 1.55))} color="linear-gradient(90deg,#b8902a,#ffe27a)" /></div></div>
         </div>
         <div className="flex gap-1 flex-wrap" style={{ maxWidth: 300 }}>{(h.buffs || []).map((b: any) => <div key={b.k} className="chip" style={{ pointerEvents: 'auto' }}>{({ rage: '🔥', wall: '🛡️', ward: '🔰', shadow: '🌑', track: '👣' } as any)[b.k]} {b.v}s</div>)}{h.glide && <div className="chip">🪂 Gliding</div>}{h.mounted && <div className="chip">🐎 Mounted</div>}{h.over && <div className="chip" style={{ borderColor: 'var(--bad)' }}>⚖️ Overburdened</div>}</div>
+        {S.party && S.party.members && S.party.members.length > 1 && (
+          <div className="panel px-3 py-2 flex flex-col gap-1.5 anim-fade pointer-events-auto" style={{ borderRadius: 12, minWidth: 200, background: 'rgba(10, 15, 25, 0.85)' }}>
+            <div className="flex justify-between items-center text-xs font-bold text-blue-400">
+              <span>🛡️ PARTY ({S.party.members.length}/4)</span>
+              <button className="text-slate-400 hover:text-red-400 cursor-pointer" onClick={() => net.sendPartyLeave()}>Leave</button>
+            </div>
+            {S.party.members.filter((m: any) => m.id !== S.p?.id).map((m: any) => (
+              <div key={m.id} className="flex flex-col gap-0.5 text-xs">
+                <div className="flex justify-between">
+                  <span className="font-semibold text-slate-200">{m.name}</span>
+                  <span className="dim">Lv {m.level} {m.cls}</span>
+                </div>
+                <Bar v={m.hp} max={m.maxHp || 100} color="linear-gradient(90deg,#2563eb,#60a5fa)" label={`${Math.ceil(m.hp)} / ${m.maxHp || 100}`} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="absolute left-1/2 top-3 -translate-x-1/2 flex flex-col items-center gap-1"><Compass /><div className="dim" style={{ fontSize: '0.8em', textShadow: '0 1px 3px #000' }}>{h.region} · {h.time} · {h.weather}{S.settings.showFps ? ` · ${h.fps} fps` : ''}</div>
         {h.boss && <div className="panel anim-pop px-4 py-2 mt-3" style={{ width: 520, borderRadius: 16 }}><div className="title text-center" style={{ fontSize: '1.1em' }}>{h.boss.name}</div><div className="dim text-center" style={{ fontSize: '0.75em', marginBottom: 4 }}>{h.boss.title}</div><Bar v={h.boss.hp} max={h.boss.max} color="linear-gradient(90deg,#7a1a1a,#e04040)" /></div>}
@@ -96,11 +113,127 @@ import { G } from '../game/fx';
 const G_player = () => G.player;
 
 function Chat() {
-  useUI(); const [txt, setTxt] = useState(''); const ref = useRef<HTMLInputElement>(null); const open = S.ui.chat; useEffect(() => { if (open) ref.current?.focus(); }, [open]);
-  const log = S.chatLog.filter((m: any) => Date.now() - m.t < 20000 || open).slice(-7);
+  useUI();
+  const [txt, setTxt] = useState('');
+  const [channel, setChannel] = useState<'world' | 'local' | 'party' | 'guild' | 'whisper'>('world');
+  const [whisperTarget, setWhisperTarget] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+  const open = S.ui.chat;
+
+  useEffect(() => { if (open) ref.current?.focus(); }, [open]);
+
+  const log = S.chatLog.filter((m: any) => Date.now() - m.t < 25000 || open).slice(-8);
   if (net.status === 'offline' && !log.length) return null;
-  return <div className="absolute left-4 bottom-44 flex flex-col gap-1 pointer-events-auto" style={{ width: 340 }}>{log.map((m: any, i: number) => <div key={i} className="toast" style={{ padding: '0.25em 0.7em', fontSize: '0.82em', animation: 'none' }}><b style={{ color: m.me ? '#ffe27a' : '#8ae0ff' }}>{m.name}:</b> {m.text}</div>)}
-    {open && <input ref={ref} className="input" value={txt} maxLength={140} placeholder="Say something… (Enter to send, Esc to close)" onChange={(e) => setTxt(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') { if (txt.trim()) net.sendChat(txt.trim()); setTxt(''); S.ui.chat = false; emitUI(); (e.target as HTMLElement).blur(); } if (e.key === 'Escape') { S.ui.chat = false; emitUI(); } }} />}</div>;
+
+  const channelColors: Record<string, string> = {
+    world: '#ffe27a',
+    local: '#86efac',
+    party: '#93c5fd',
+    guild: '#fdba74',
+    whisper: '#f472b6'
+  };
+
+  const submit = () => {
+    let raw = txt.trim();
+    if (!raw) {
+      S.ui.chat = false;
+      emitUI();
+      return;
+    }
+
+    let ch = channel;
+    let target = whisperTarget;
+
+    if (raw.startsWith('/p ')) {
+      ch = 'party';
+      raw = raw.slice(3).trim();
+    } else if (raw.startsWith('/g ')) {
+      ch = 'guild';
+      raw = raw.slice(3).trim();
+    } else if (raw.startsWith('/l ')) {
+      ch = 'local';
+      raw = raw.slice(3).trim();
+    } else if (raw.startsWith('/w ')) {
+      ch = 'whisper';
+      const parts = raw.slice(3).trim().split(' ');
+      target = parts[0] || '';
+      raw = parts.slice(1).join(' ');
+    }
+
+    if (raw) {
+      net.sendChat(raw, ch, target);
+    }
+    setTxt('');
+    S.ui.chat = false;
+    emitUI();
+  };
+
+  return (
+    <div className="absolute left-4 bottom-44 flex flex-col gap-1 pointer-events-auto" style={{ width: 380, zIndex: 10 }}>
+      {net.status === 'realm' && (
+        <div className="flex items-center gap-2 px-2 py-1 text-xs" style={{ background: 'rgba(15, 23, 42, 0.75)', borderRadius: 4, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+          <span style={{ color: '#60a5fa' }}>🌐 GLOBAL REALM</span>
+          <span className="dim">|</span>
+          <span style={{ color: '#4ade80' }}>Online: {net.onlineCount}</span>
+        </div>
+      )}
+      <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+        {log.map((m: any, i: number) => {
+          const col = channelColors[m.channel || 'world'] || '#ffe27a';
+          return (
+            <div key={i} className="toast" style={{ padding: '0.25em 0.7em', fontSize: '0.82em', animation: 'none', background: 'rgba(10, 15, 25, 0.85)' }}>
+              <span style={{ color: col, fontWeight: 700, marginRight: 4 }}>[{((m.channel || 'world') as string).toUpperCase()}]</span>
+              <b style={{ color: m.me ? '#ffe27a' : '#8ae0ff' }}>{m.name}:</b> {m.text}
+            </div>
+          );
+        })}
+      </div>
+      {open && (
+        <div className="flex flex-col gap-1 p-1.5" style={{ background: 'rgba(15, 23, 42, 0.95)', borderRadius: 6, border: '1px solid #334155' }}>
+          <div className="flex gap-1 text-xs">
+            {(['world', 'local', 'party', 'guild', 'whisper'] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                className={`px-2 py-0.5 rounded text-xs transition cursor-pointer ${channel === c ? 'font-bold bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                onClick={() => setChannel(c)}
+              >
+                {c.charAt(0).toUpperCase() + c.slice(1)}
+              </button>
+            ))}
+          </div>
+          {channel === 'whisper' && (
+            <input
+              className="input text-xs"
+              placeholder="Target character name..."
+              value={whisperTarget}
+              onChange={(e) => setWhisperTarget(e.target.value)}
+              style={{ padding: '2px 6px', fontSize: '0.8em' }}
+            />
+          )}
+          <input
+            ref={ref}
+            className="input"
+            value={txt}
+            maxLength={140}
+            placeholder={`Say in ${channel}... (/p, /g, /l, /w target)`}
+            onChange={(e) => setTxt(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') {
+                submit();
+                (e.target as HTMLElement).blur();
+              }
+              if (e.key === 'Escape') {
+                S.ui.chat = false;
+                emitUI();
+              }
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function DeadScreen() {

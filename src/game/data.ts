@@ -1,11 +1,27 @@
 // AETHERFALL — static game content (classes, items, skills, quests, dialogue, world definitions)
 export const SAVE_VERSION = 1;
-export const GAME_VERSION = '0.9.0';
+export const GAME_VERSION = '1.0.0';
 export const VERSION_NAME = 'Broken Skies';
 export const BUILD_DATE = 'November 2026';
 export const GITHUB_REPO = 'https://github.com/l3xstud105/Aetherfall';
 export const GITHUB_PAGES_URL = 'https://l3xstud105.github.io/Aetherfall/';
 export const CHANGELOG = [
+  {
+    version: '1.0.0',
+    date: '2026-11',
+    title: 'A Tale of Broken Skies — The 1.0 Master Release',
+    highlights: [
+      '4 Complete Underground Dungeons: Whispering Catacombs, Sunken Aether Temple, Bastion Undercroft, and Luminescent Grotto.',
+      'Elemental Reaction Matrix: Conflagration, Superconductor, Vaporize (2×), Electro-Discharge, and Magma Eruption.',
+      'Multi-Phase Boss Battles: Karreth, Gravewarden, Rift Warden, and Aether Colossus feature dynamic Phase II Enraged transformations.',
+      'Timed 0.22s Perfect Parry with procedural metallic deflection chime and +60% counter attack multiplier.',
+      'Rebuilt Ashenvale Outpost with dynamic reconstruction structures, Quartermaster Kaelen, and Rodrik Caravan merchant.',
+      'Companion Perks: Active loyalty bonuses for Lyra, Ser Brann, Sister Iselle, Kestrel, and Corvin Vale.',
+      'Consumable Food & Potion Buffs: Vitality, Warmth, Rage, Stoneskin, and Zephyr Tonic stat enhancements.',
+      'Legendary Dungeon Relics: Sunken Dawn Relic, Voidheart Talisman, Heart of the Mountain, and Tempest Conduit.',
+      'Cross-browser optimization, 60fps performance profiling, and complete desktop/web distribution.',
+    ],
+  },
   {
     version: '0.9.0',
     date: '2026-11',
@@ -106,6 +122,7 @@ export const SKILLS: any[] = [
   { id: 'm5', branch: 'might', name: 'War Cry', tier: 3, cost: 1, lvl: 4, req: ['m2'], ability: 'war_cry' },
   { id: 'm6', branch: 'might', name: "Titan's Fury", tier: 4, cost: 3, lvl: 12, req: ['m4', 'm5'], mods: { melee: 0.25, steal: 0.05 }, desc: 'Legendary: +25% melee damage, 5% lifesteal.' },
   { id: 'm7', branch: 'might', name: 'Thunder Slam', tier: 4, cost: 2, lvl: 8, req: ['m4'], ability: 'thunder_slam' },
+  { id: 'm8', branch: 'might', name: 'Juggernaut', tier: 4, cost: 2, lvl: 10, req: ['m3'], mods: { def: 12, hp: 35 }, desc: '+12 defence, +35 health, massive stagger resistance.' },
   { id: 'g1', branch: 'guile', name: 'Fleet Foot', tier: 1, cost: 1, lvl: 1, mods: { speed: 0.06 }, desc: '+6% movement speed.' },
   { id: 'g2', branch: 'guile', name: 'Rapid Shot', tier: 2, cost: 1, lvl: 2, req: ['g1'], ability: 'rapid_shot' },
   { id: 'g3', branch: 'guile', name: 'Keen Eye', tier: 2, cost: 1, lvl: 3, req: ['g1'], mods: { crit: 0.08 }, desc: '+8% critical chance.' },
@@ -113,6 +130,7 @@ export const SKILLS: any[] = [
   { id: 'g5', branch: 'guile', name: 'Piercing Shot', tier: 3, cost: 1, lvl: 4, req: ['g2'], ability: 'piercing_shot' },
   { id: 'g6', branch: 'guile', name: 'Phantom', tier: 4, cost: 3, lvl: 12, req: ['g4', 'g5'], mods: { crit: 0.15, ranged: 0.15 }, desc: 'Legendary: +15% crit, +15% ranged damage.' },
   { id: 'g7', branch: 'guile', name: 'Zephyr Step', tier: 3, cost: 1, lvl: 5, req: ['g1'], ability: 'wind_step' },
+  { id: 'g8', branch: 'guile', name: 'Executioner', tier: 4, cost: 2, lvl: 10, req: ['g3'], mods: { crit: 0.12, speed: 0.05 }, desc: '+12% critical strike chance, +5% move speed.' },
   { id: 'a1', branch: 'arcana', name: 'Mana Well', tier: 1, cost: 1, lvl: 1, mods: { mana: 30 }, desc: '+30 max mana.' },
   { id: 'a2', branch: 'arcana', name: 'Fireball', tier: 2, cost: 1, lvl: 2, req: ['a1'], ability: 'fireball' },
   { id: 'a3', branch: 'arcana', name: 'Frost Nova', tier: 2, cost: 1, lvl: 3, req: ['a1'], ability: 'frost_nova' },
@@ -124,6 +142,7 @@ export const SKILLS: any[] = [
   { id: 'a9', branch: 'arcana', name: 'Meteorfall', tier: 5, cost: 3, lvl: 15, req: ['a8', 'a5'], ability: 'meteor' },
   { id: 'a10', branch: 'arcana', name: 'Spellweaver', tier: 4, cost: 2, lvl: 8, req: ['a4'], mods: { magic: 0.2 }, desc: '+20% spell damage.' },
   { id: 'a11', branch: 'arcana', name: 'Flame Slash', tier: 3, cost: 1, lvl: 5, req: ['a2'], ability: 'flame_slash' },
+  { id: 'a12', branch: 'arcana', name: 'Prismatic Focus', tier: 4, cost: 2, lvl: 10, req: ['a10'], mods: { magic: 0.15, mana: 40 }, desc: '+15% elemental magic damage, +40 max mana.' },
   { id: 's1', branch: 'spirit', name: 'Resolve', tier: 1, cost: 1, lvl: 1, mods: { def: 5 }, desc: '+5 defence.' },
   { id: 's2', branch: 'spirit', name: 'Mending Light', tier: 2, cost: 1, lvl: 2, req: ['s1'], ability: 'heal' },
   { id: 's3', branch: 'spirit', name: 'Aegis Ward', tier: 2, cost: 1, lvl: 3, req: ['s1'], ability: 'ward' },
@@ -131,12 +150,14 @@ export const SKILLS: any[] = [
   { id: 's5', branch: 'spirit', name: 'Shield Wall', tier: 3, cost: 1, lvl: 4, req: ['s3'], ability: 'shield_wall' },
   { id: 's6', branch: 'spirit', name: 'Avatar of Dawn', tier: 4, cost: 3, lvl: 12, req: ['s4', 's5'], mods: { regen: 2, def: 10, hp: 40 }, desc: 'Legendary: regeneration, +10 defence, +40 health.' },
   { id: 's7', branch: 'spirit', name: 'Glacial Ward', tier: 3, cost: 1, lvl: 5, req: ['s3'], ability: 'frost_shield' },
+  { id: 's8', branch: 'spirit', name: 'Divine Bastion', tier: 4, cost: 2, lvl: 10, req: ['s5'], mods: { def: 10, regen: 1.0 }, desc: '+10 defence, increased natural recovery.' },
   { id: 'w1', branch: 'wild', name: 'Tracker', tier: 1, cost: 1, lvl: 1, ability: 'track' },
   { id: 'w2', branch: 'wild', name: 'Forager', tier: 2, cost: 1, lvl: 2, req: ['w1'], mods: { gather: 0.5 }, desc: '50% chance of extra yield when gathering.' },
   { id: 'w3', branch: 'wild', name: 'Trailblazer', tier: 2, cost: 1, lvl: 3, req: ['w1'], mods: { speed: 0.08, sta: 20 }, desc: '+8% speed, +20 stamina.' },
   { id: 'w4', branch: 'wild', name: 'Beast Lore', tier: 3, cost: 1, lvl: 5, req: ['w2'], mods: { ranged: 0.1, hp: 20 }, desc: '+10% ranged damage, +20 health.' },
   { id: 'w5', branch: 'wild', name: 'Second Wind', tier: 3, cost: 2, lvl: 7, req: ['w3'], mods: { regen: 1.5, sta: 30 }, desc: 'Faster recovery, +30 stamina.' },
   { id: 'w6', branch: 'wild', name: 'Earthen Bastion', tier: 3, cost: 1, lvl: 6, req: ['w3'], ability: 'terra_wall' },
+  { id: 'w7', branch: 'wild', name: 'Apex Predator', tier: 4, cost: 2, lvl: 10, req: ['w4'], mods: { ranged: 0.15, melee: 0.1 }, desc: '+15% ranged damage, +10% melee damage.' },
 ];
 export const BRANCHES: Record<string, { name: string; title: string; color: string }> = {
   might: { name: 'Might', title: 'Warblade', color: '#e0724a' }, guile: { name: 'Guile', title: 'Shadowhand', color: '#79c978' },
@@ -161,6 +182,10 @@ W('halberd_royal', 'Royal Halberd', 'spear', 'rare', 28, 750, 'Gilded halberd of
 W('spear_aether', 'Aetherlance', 'spear', 'legendary', 46, 8500, 'Forged from fallen sky-metal; crackles with aether energy.', { color: '#c0a2ff', bound: 'aether', mag: 14, two: true, req: { lvl: 10 } });
 W('sword_kharun_king', 'Frostbite Cleaver', 'greatsword', 'epic', 39, 2400, 'Lord Kharun\'s vanguard blade; permanently rimed in frost.', { color: '#7fe0ff', bound: 'ice', two: true, req: { lvl: 8 } });
 W('dagger_whisper', 'Void Whisper', 'dagger', 'epic', 25, 2100, 'A blade folded in the shadows between dimensions.', { color: '#9060ff', bound: 'aether', req: { lvl: 8 } });
+W('sword_flame_brand', 'Ashen Flameblade', 'sword', 'epic', 24, 650, 'Forged in the ruins of Ashenvale; strikes ignite foes in searing flame.', { bound: 'fire', color: '#ff6a20' });
+W('bow_stormstrider', 'Stormstrider Bow', 'bow', 'epic', 26, 700, 'Looses crackling lightning arrows that shock foes.', { bound: 'lightning', color: '#ffd440', two: true });
+W('staff_abyssal', 'Abyssal Scepter', 'staff', 'epic', 30, 750, 'Dredged from the sunken temple. Chills the air to freezing frost.', { bound: 'ice', color: '#7ad4ff', two: true });
+W('greatsword_earthshaker', 'Earthshaker Greatsword', 'greatsword', 'epic', 34, 800, 'Crushing stone-edged blade capable of shattering armor and triggering magma.', { bound: 'earth', two: true, color: '#9a8060' });
 W('bow_celestial', 'Sunstriker Bow', 'bow', 'legendary', 38, 8800, 'Fires arrows woven from pure dawn light.', { color: '#ffd24a', bound: 'fire', mag: 10, two: true, req: { lvl: 10 } });
 W('greatsword_iron', 'Iron Greatsword', 'greatsword', 'common', 22, 160, 'Slow, heavy, two-handed.', { color: '#aab3bc', two: true });
 W('greatsword_kharun', 'Dominion Cleaver', 'greatsword', 'rare', 34, 900, 'Black steel of the Kharun forges.', { color: '#5b6577', two: true, req: { lvl: 6 } });
@@ -187,6 +212,8 @@ A('shield_kite', 'Kite Shield', 'offhand', 'uncommon', 8, 210, 'Tall and sturdy.
 A('shield_tower', 'Tower Shield', 'offhand', 'rare', 14, 700, 'A moving wall.', { color: '#6b7584', kind: 'shield', req: { lvl: 6 } });
 A('shield_holy', 'Sunward Shield', 'offhand', 'uncommon', 9, 320, 'Gilded with a rising sun.', { color: '#f1d98a', kind: 'shield', mana: 10 });
 A('shield_aegis', 'Aegis of the Dawn', 'offhand', 'epic', 18, 1600, 'Sanctified buckler that expands your parry window.', { color: '#ffd24a', kind: 'shield', mana: 25, req: { lvl: 7 } });
+A('shield_bastion', 'Bastion Bulwark', 'offhand', 'epic', 24, 600, 'Heavy iron-reinforced shield from the forgotten fortress.', { color: '#4a5060', kind: 'shield', hp: 40 });
+A('chest_voidwalker', 'Voidwalker Vestments', 'chest', 'epic', 18, 900, 'Enchanted robes woven with void essence and celestial silk.', { style: 'robe', color: '#3a2060', mag: 20, mana: 40, req: { lvl: 6 } });
 A('chest_cloth', 'Traveller\'s Tunic', 'chest', 'common', 2, 20, 'Simple wool.', { style: 'cloth', color: '#7b6a50' });
 A('chest_robe', 'Apprentice Robe', 'chest', 'common', 3, 50, 'Blue wool robe.', { style: 'robe', color: '#3f58b5', mana: 15 });
 A('chest_robe_white', "Mender's Robe", 'chest', 'common', 3, 55, 'White and gold.', { style: 'robe', color: '#e9e4d3', mana: 12, hp: 10 });
@@ -225,14 +252,26 @@ A('amulet_ward', 'Amulet of Warding', 'amulet', 'rare', 6, 600, 'Pale blue ward-
 A('amulet_lore', 'Loremaster\'s Pendant', 'amulet', 'epic', 4, 1500, 'Reward for those who read the Sundering. +40 mana.', { mana: 40, color: '#e5c27a' });
 A('amulet_skyborn', 'Skyborn Sigil', 'amulet', 'legendary', 10, 8000, 'It matches the mark on your palm. +60 health, +60 mana.', { hp: 60, mana: 60, color: '#c8a3ff', speed: 0.05 });
 A('amulet_eternity', 'Amulet of Broken Skies', 'amulet', 'legendary', 8, 7500, 'Pulsing core fragment of the central Spire.', { hp: 50, mana: 50, color: '#e0b040', speed: 0.04 });
+A('relic_sunken_dawn', 'Sunken Dawn Relic', 'amulet', 'legendary', 14, 2500, 'Recovered from the Whispering Catacombs. Mends the bearer and empowers holy magic.', { mag: 16, hp: 40, mana: 30, color: '#f7d070' });
+A('relic_void_heart', 'Voidheart Talisman', 'amulet', 'legendary', 12, 2800, 'Pulsating void core from the sunken temple. Critical strikes hum with dark resonance.', { mag: 18, atk: 12, crit: 0.1, color: '#7a40c0' });
+A('relic_earth_core', 'Heart of the Mountain', 'amulet', 'legendary', 18, 2400, 'Dense petrified core from the underground river grotto. Unflinching stagger resistance.', { def: 18, hp: 60, color: '#a08050' });
+A('relic_storm_shard', 'Tempest Conduit', 'ring', 'legendary', 10, 2600, 'Crackling lightning fragment from the high skies. Accelerates movement and shock conduction.', { mag: 14, speed: 0.1, color: '#ffe250' });
 const C = (id: string, name: string, v: number, desc: string, use: any, rarity = 'common') => add(id, name, 'consumable', rarity, v, 0.3, desc, { use });
 C('potion_health', 'Healing Potion', 25, 'Restores 60 health.', { hp: 60 });
 C('potion_health_big', 'Greater Healing Potion', 80, 'Restores 160 health.', { hp: 160 }, 'uncommon');
 C('potion_mana', 'Mana Draught', 30, 'Restores 60 mana.', { mana: 60 });
 C('potion_stamina', 'Stamina Tonic', 20, 'Restores 80 stamina.', { sta: 80 });
+C('potion_rejuvenation', 'Rejuvenation Draught', 95, 'Restores 120 health and 100 mana.', { hp: 120, mana: 100, buff: 'vitality', dur: 90 }, 'rare');
 C('elixir_might', 'Elixir of Might', 90, '+30% damage for 2 minutes.', { buff: 'rage', dur: 120 }, 'rare');
 C('elixir_stoneskin', 'Stoneskin Elixir', 80, '+25 defence for 2 minutes.', { buff: 'wall', dur: 120 }, 'rare');
 C('elixir_speed', 'Zephyr Tonic', 60, '+15% move speed for 2 minutes.', { buff: 'speed', dur: 120 }, 'uncommon');
+C('apple_cider', 'Spiced Apple Cider', 18, 'Steaming hot cider that restores 30 stamina and warms against mountain blizzards.', { sta: 30, hp: 20, buff: 'warmth', dur: 120 });
+ITEMS.cider = ITEMS.apple_cider;
+ITEMS.sword_ashen_flame = ITEMS.sword_flame_brand;
+ITEMS.relic_sunken = ITEMS.relic_sunken_dawn;
+ITEMS.relic_voidheart = ITEMS.relic_void_heart;
+ITEMS.relic_mountain = ITEMS.relic_earth_core;
+ITEMS.relic_tempest = ITEMS.relic_storm_shard;
 C('bread', 'Fresh Bread', 4, 'Restores 20 health.', { hp: 20 });
 C('stew', 'Hearty Stew', 14, 'Restores 70 health and 40 stamina.', { hp: 70, sta: 40 });
 C('roast_meat', 'Roast Venison', 12, 'Restores 55 health.', { hp: 55 });
@@ -246,10 +285,16 @@ M('leather', 'Leather', 8, 0.5, 'Tanned hide.'); M('hide', 'Raw Hide', 5, 1, 'Ne
 M('herb_red', 'Redroot', 5, 0.1, 'A healing herb.'); M('herb_blue', 'Frostbloom', 6, 0.1, 'A cold-growing herb with mana in the petals.'); M('moonpetal', 'Moonpetal', 30, 0.1, 'Glows under moonlight.', 'rare'); M('mushroom', 'Glowcap', 7, 0.1, 'Faintly luminous.'); M('berry', 'Wild Berries', 3, 0.1, 'Sweet.');
 M('wheat', 'Wheat', 3, 0.3, 'Golden stalks.'); M('flour', 'Flour', 6, 0.5, 'Milled wheat.'); M('turnip', 'Turnip', 4, 0.4, 'Hardy root.'); M('seed_turnip', 'Turnip Seeds', 3, 0.05, 'Plant at a farm plot.'); M('seed_wheat', 'Wheat Seeds', 3, 0.05, 'Plant at a farm plot.');
 M('feather', 'Feather', 2, 0.05, 'Fletching.'); M('pelt', 'Wolf Pelt', 18, 1, 'Thick fur.'); M('fang', 'Fang', 10, 0.1, 'Sharp.'); M('bone', 'Bone', 3, 0.5, 'Brittle.'); M('aether_dust', 'Aether Dust', 40, 0.1, 'Drifts upward when released.', 'rare'); M('gem_ruby', 'Ruby', 150, 0.1, 'Blood-red gem.', 'rare');
+M('gem_sapphire', 'Sapphire', 150, 0.1, 'Glinting ice-blue gemstone.', 'rare');
+M('gem_topaz', 'Topaz', 150, 0.1, 'Crackling golden-yellow gemstone.', 'rare');
+M('gem_emerald', 'Emerald', 150, 0.1, 'Verdant green stone with deep earth energy.', 'rare');
 M('aether_core', 'Aether Core', 220, 0.5, 'Crystalline heart of a dimensional entity.', 'epic');
 M('quicksilver', 'Quicksilver Ore', 45, 1.2, 'Rare liquid metal extracted from deep veins.', 'rare');
 M('enchanted_timber', 'Warded Timber', 25, 2, 'Heartwood treated with fire-resistant resins.', 'uncommon');
 M('void_essence', 'Void Essence', 65, 0.2, 'Swirling dark vapor harnessed from void creatures.', 'rare');
+add('treasure_map_coast', 'Treasure Map: Coastal Ruin', 'map', 'rare', 120, 0.1, 'Parchment sketch: Near the ruined lighthouse and chapel bluff, where salt spray meets stone.');
+add('treasure_map_peaks', 'Treasure Map: Whispering Peak', 'map', 'rare', 140, 0.1, 'Faded parchment: Northwest along the snowy ridge of Frostgate, beneath the lone mountain evergreen.');
+add('treasure_map_woods', 'Treasure Map: Ancient Oak', 'map', 'rare', 130, 0.1, 'Mossy charcoal sketch: Deep west within the Thornwood, three paces from the northern monolith.');
 add('sunken_relic', 'Sunken Relic', 'collectible', 'rare', 350, 1, 'Barnacle-encrusted golden artifact from the Sunken Veil.');
 add('banner_token', 'Ashen Banner Token', 'quest', 'common', 0, 0.1, 'A cinder-black brass token stamped with a burning banner.');
 add('locket', 'Burned Locket', 'quest', 'common', 0, 0.1, 'Recovered from the ashes of Ashenvale. Contains a half-melted portrait.');
@@ -308,6 +353,12 @@ export const RECIPES: any[] = [
   { id: 'sunshard_rapier', name: 'Imbue Sunshard Rapier', station: 'enchanting', prof: 'enchanting', lvl: 4, in: { sword_steel: 1, gem_ruby: 1, aether_dust: 2 }, out: { sunshard_rapier: 1 }, xp: 85 },
   { id: 'void_cleaver', name: 'Attune Void Cleaver', station: 'enchanting', prof: 'enchanting', lvl: 5, in: { greatsword_iron: 1, void_essence: 2, aether_core: 1 }, out: { void_cleaver: 1 }, xp: 110 },
   { id: 'robe_arcane', name: 'Weave Arcane Robes', station: 'enchanting', prof: 'enchanting', lvl: 2, in: { chest_moon: 1, aether_dust: 2 }, out: { robe_arcane: 1 }, xp: 45 },
+  { id: 'sword_flame_brand', name: 'Forge Ashen Flameblade', station: 'smithy', prof: 'blacksmithing', lvl: 4, in: { steel_ingot: 3, gem_ruby: 1, coal: 2 }, out: { sword_flame_brand: 1 }, xp: 60 },
+  { id: 'bow_stormstrider', name: 'Craft Stormstrider Bow', station: 'smithy', prof: 'blacksmithing', lvl: 4, in: { iron_ingot: 2, leather: 2, gem_topaz: 1 }, out: { bow_stormstrider: 1 }, xp: 55 },
+  { id: 'shield_bastion', name: 'Forge Bastion Bulwark', station: 'smithy', prof: 'blacksmithing', lvl: 4, in: { steel_ingot: 3, iron_ingot: 2 }, out: { shield_bastion: 1 }, xp: 50 },
+  { id: 'staff_abyssal', name: 'Enchant Abyssal Scepter', station: 'enchanting', prof: 'enchanting', lvl: 4, in: { staff_oak: 1, gem_sapphire: 1, aether_dust: 3 }, out: { staff_abyssal: 1 }, xp: 80 },
+  { id: 'potion_rejuvenation', name: 'Brew Rejuvenation Draught', station: 'alchemy', prof: 'alchemy', lvl: 4, in: { potion_health: 1, potion_mana: 1, moonpetal: 1 }, out: { potion_rejuvenation: 2 }, xp: 40 },
+  { id: 'apple_cider', name: 'Simmer Spiced Apple Cider', station: 'kitchen', prof: 'cooking', lvl: 1, in: { apple: 2 }, out: { apple_cider: 2 }, xp: 6 },
 ];
 export const PROFS: Record<string, { name: string; icon: string; desc: string }> = {
   blacksmithing: { name: 'Blacksmithing', icon: '🔨', desc: 'Smelt and forge at a smithy or your own anvil.' },
@@ -331,6 +382,8 @@ export const SHOPS: Record<string, any> = {
   sigrun: { name: 'The Frozen Flagon', fac: 'kharun', stock: ['bread', 'stew', 'roast_meat', 'grilled_fish'] },
   odo: { name: 'The Drowned Lantern', fac: 'league', stock: ['bread', 'grilled_fish', 'stew', 'berry_tart'] },
   hob: { name: "Hob's Stables", fac: 'moon', stock: [] },
+  kaelen: { name: 'Ashenvale Outpost', fac: 'moon', stock: ['iron_ingot', 'steel_ingot', 'enchanted_timber', 'coal', 'bread', 'stew', 'sword_steel', 'shield_kite'] },
+  rodrik: { name: "Rodrik's Wandering Caravan", fac: 'league', stock: ['gem_ruby', 'gem_sapphire', 'gem_topaz', 'gem_emerald', 'seed_turnip', 'seed_wheat', 'treasure_map_coast', 'treasure_map_peaks', 'treasure_map_woods', 'quicksilver', 'potion_health_big', 'elixir_speed', 'void_essence'] },
 };
 export const MOUNTS: Record<string, any> = {
   horse: { name: 'Riding Horse', price: 400, speed: 2.1, desc: 'Swift and dependable.', req: null },
@@ -378,6 +431,9 @@ export const ENEMIES: Record<string, any> = {
   gravewarden: { name: 'The Gravewarden', hp: 420, dmg: 19, spd: 3.6, kind: 'skeleton', fac: 'undead', boss: true, xp: 400, gold: [50, 120], loot: [['relic_crown', 1], ['silver_ore', 3], ['gem_ruby', 1]], col: '#bba98a', wep: 'greatsword', sc: 1.5, title: 'Keeper of the Cinder Crypt' },
   rift_warden: { name: 'The Rift Warden', hp: 1100, dmg: 28, spd: 4.8, kind: 'wraith', fac: 'rift', boss: true, ranged: 'bolt', xp: 1500, gold: [0, 0], loot: [['amulet_skyborn', 1], ['tome_ancient', 1]], col: '#a06bff', sc: 2.2, title: 'Fallen Keeper of the Hollow Door' },
   void_cultist: { name: 'Aether Cultist', hp: 95, dmg: 14, spd: 4.0, kind: 'human', fac: 'rift', ranged: 'bolt', xp: 55, gold: [5, 20], loot: [['aether_dust', 0.4]], col: '#3a2060', wep: 'staff', sc: 1.02 },
+  cultist_reaver: { name: 'Aether Reaver', hp: 125, dmg: 15, spd: 4.4, kind: 'human', fac: 'rift', xp: 65, gold: [10, 30], loot: [['void_essence', 0.5], ['sword_iron', 0.2]], col: '#3a2060', wep: 'sword', sc: 1.05 },
+  ashen_reaver: { name: 'Ashen Reaver', hp: 135, dmg: 16, spd: 4.0, kind: 'human', fac: 'ashen', xp: 70, gold: [12, 35], loot: [['iron_ingot', 0.5], ['potion_health', 0.2]], col: '#4a2020', wep: 'greatsword', sc: 1.1 },
+  crypt_specter: { name: 'Crypt Specter', hp: 140, dmg: 16, spd: 4.2, kind: 'wraith', fac: 'undead', ranged: 'bolt', xp: 75, gold: [0, 0], loot: [['aether_dust', 0.6], ['bone', 1]], col: '#4080a0', sc: 1.15 },
   aether_golem: { name: 'The Aether Colossus', hp: 780, dmg: 26, spd: 3.4, kind: 'beast', fac: 'rift', animal: 'bear', col: '#504070', boss: true, xp: 950, gold: [120, 260], loot: [['aether_core', 1]], sc: 1.85, title: 'Guardian of the Sky Sanctum' },
 };
 export const ANIMALS: Record<string, any> = {
@@ -611,6 +667,8 @@ export const DIALOGUE: Record<string, any> = {
   } },
   zaya: { start: 'a', nodes: { a: { t: 'Zaya, purveyor of the unusual. Prices are firm. Coin is always welcome.', c: [{ t: 'Show me.', go: null, do: [['shop', 'zaya']] }, { t: 'No.', go: null }] } } },
   odo: { start: 'a', nodes: { a: { t: 'Drowned Lantern. Don\'t ask about the blue light.', c: [{ t: 'Food?', go: null, do: [['shop', 'odo']] }, { t: 'A bed (10g).', go: null, cond: [['gold', 10]], do: [['gold', -10], ['rest']] }, { t: 'No.', go: null }] } } },
+  kaelen: { start: 'a', nodes: { a: { t: 'The Ashenvale rebuild moves forward day by day. We will make these stones proud again. Need supplies or building stock?', c: [{ t: 'Show me your supplies.', go: null, do: [['shop', 'kaelen']] }, { t: 'Keep strong, Kaelen.', go: null }] } } },
+  rodrik: { start: 'a', nodes: { a: { t: 'Greetings wanderer! Rodrik\'s Travelling Caravan carries curiosities from every corner of the realm—gems, maps, and rare draughts.', c: [{ t: 'Browse your wares.', go: null, do: [['shop', 'rodrik']] }, { t: 'Safe travels.', go: null }] } } },
   aether_stag: { start: 'a', nodes: { a: { t: '(The stag studies you, antlers humming softly. It lowers its head — and lets you touch its brow.)', c: [{ t: '(Stay calm and bow.)', go: null, do: [['adv', 'stag'], ['toast', 'The aether stag accepts you.']] }] } } },
   fenn: { start: 'a', nodes: { a: { t: 'Aurel says the Door only opens when three shards are set. I\'ve checked the runes twice. Bring them and press the glowing stone.', c: [{ t: 'Thanks, Fenn.', go: null }] } } },
 };
@@ -676,6 +734,10 @@ export const POIS: any[] = [
   { id: 'lighthouse', name: 'Drowned Lantern Light', x: 230, z: -30, type: 'wonder', r: 16, xp: 60 },
   { id: 'lodge', name: "Lyra's Old Lodge", x: -110, z: 150, type: 'camp', r: 14, xp: 40 },
   { id: 'sunken_veil', name: 'The Sunken Veil', x: 210, z: 10, type: 'ruin', r: 24, xp: 120 },
+  { id: 'catacombs', name: 'Whispering Catacombs', x: 95, z: -35, type: 'cave', r: 18, xp: 110 },
+  { id: 'sunken_temple', name: 'Sunken Aether Temple', x: 212, z: 12, type: 'ruin', r: 20, xp: 130 },
+  { id: 'bastion_undercroft', name: 'Bastion Undercroft', x: -12, z: 215, type: 'fort', r: 18, xp: 120 },
+  { id: 'grotto', name: 'Luminescent Grotto', x: 62, z: -155, type: 'cave', r: 18, xp: 100 },
   { id: 'sky_sanctum', name: 'Sky Sanctum', x: -80, z: -140, type: 'sky', r: 25, xp: 150 },
   { id: 'hollow_rift', name: 'The Hollow Rift', x: 0, z: 0, type: 'dimension', r: 0, xp: 300, hidden: true },
 ];

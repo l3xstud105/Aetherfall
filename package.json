@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && python3 scripts/build_exe.py",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "npm run server:build && node server/server.mjs",
+    "server:build": "npx esbuild server/server.ts --bundle --platform=node --format=esm --packages=external --outfile=server/server.mjs",
+    "test": "bash tests/run.sh"
   },
   "dependencies": {
     "@types/three": "^0.187.0",
@@ -15,14 +18,17 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "tailwind-merge": "3.4.0",
-    "three": "^0.187.0"
+    "three": "^0.187.0",
+    "ws": "^8.23.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.17",
     "@types/node": "22.19.17",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "5.1.1",
+    "colyseus.js": "^0.16.22",
     "pkg": "^5.8.1",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",

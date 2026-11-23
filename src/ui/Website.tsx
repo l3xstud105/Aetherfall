@@ -191,7 +191,7 @@ export function Website({
 
           <div className="hidden lg:flex items-center gap-6 text-sm font-medium text-[#b7a888]">
             <button onClick={() => scrollToSection('play')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">Play Online</button>
-            <button onClick={() => scrollToSection('features')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">0.9 Features</button>
+            <button onClick={() => scrollToSection('features')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">1.0 Features</button>
             <button onClick={() => scrollToSection('classes')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">10 Classes</button>
             <button onClick={() => scrollToSection('magic')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">5 Elements</button>
             <button onClick={() => scrollToSection('world')} className="hover:text-[#f6dc8a] transition-colors cursor-pointer">World & Lore</button>
@@ -209,7 +209,7 @@ export function Website({
               <span>⚔️</span> Play in Browser
             </button>
             <button
-              onClick={() => handleDownload('Aetherfall-v0.9.exe')}
+              onClick={() => handleDownload('Aetherfall-v1.0.exe')}
               className="px-3 sm:px-4 py-2 rounded-lg bg-[#251e16] border border-[#e3b94f]/40 hover:border-[#e3b94f] text-[#efe4c8] text-xs sm:text-sm font-medium hover:bg-[#33291e] transition-all cursor-pointer flex items-center gap-1.5"
             >
               <span>💻</span> <span className="hidden sm:inline">Download</span> .EXE
@@ -250,13 +250,13 @@ export function Website({
               <span>⚔️</span> Play Aetherfall in Browser
             </button>
             <button
-              onClick={() => handleDownload('Aetherfall-v0.9.exe')}
+              onClick={() => handleDownload('Aetherfall-v1.0.exe')}
               className="px-6 py-3.5 rounded-xl bg-[#1e1810]/90 border border-[#e3b94f]/50 hover:border-[#f6dc8a] text-[#efe4c8] font-bold text-base sm:text-lg hover:bg-[#2c2216] transition-all cursor-pointer flex items-center gap-2.5"
             >
               <span>💻</span> Download Standalone .EXE
             </button>
             <button
-              onClick={() => handleDownload('Aetherfall-v0.9-Windows.zip')}
+              onClick={() => handleDownload('Aetherfall-v1.0-Windows.zip')}
               className="px-5 py-3.5 rounded-xl bg-black/40 border border-[#e3b94f]/30 hover:border-[#e3b94f]/70 text-[#d4c7a8] text-sm hover:bg-black/60 transition-all cursor-pointer flex items-center gap-2"
             >
               <span>📦</span> Windows ZIP Bundle
@@ -374,13 +374,13 @@ export function Website({
             </div>
             <div>
               <span>Offline ready · Switch to standalone with </span>
-              <button onClick={() => handleDownload('Aetherfall-v0.9.exe')} className="text-[#f6dc8a] underline hover:text-white cursor-pointer font-bold">Aetherfall.exe</button>
+              <button onClick={() => handleDownload('Aetherfall-v1.0.exe')} className="text-[#f6dc8a] underline hover:text-white cursor-pointer font-bold">Aetherfall.exe</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ================= 0.9 FEATURES SECTION (#features) ================= */}
+      {/* ================= 1.0 FEATURES SECTION (#features) ================= */}
       <section id="features" className="py-16 px-4 max-w-7xl mx-auto">
         <div className="text-center mb-12">
           <div className="text-[#e3b94f] text-sm uppercase tracking-widest font-bold mb-2">Version {GAME_VERSION} Evolution</div>
@@ -718,7 +718,7 @@ export function Website({
               </div>
             </div>
             <button
-              onClick={() => handleDownload('Aetherfall-v0.9.exe')}
+              onClick={() => handleDownload('Aetherfall-v1.0.exe')}
               className="w-full py-3 rounded-lg bg-gradient-to-r from-[#e3b94f] to-[#f6dc8a] text-[#14100c] font-bold text-sm shadow-lg shadow-[#e3b94f]/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>💻</span> Download Aetherfall.exe
@@ -731,7 +731,7 @@ export function Website({
                 <span className="text-4xl">📦</span>
                 <span className="px-2.5 py-1 rounded bg-white/10 text-white text-xs font-bold uppercase tracking-wider">Complete Bundle</span>
               </div>
-              <h3 className="text-xl font-bold text-[#f6dc8a] mb-2">Aetherfall-v0.9-Windows.zip</h3>
+              <h3 className="text-xl font-bold text-[#f6dc8a] mb-2">Aetherfall-v1.0-Windows.zip</h3>
               <p className="text-xs text-[#b7a888] leading-relaxed mb-4">
                 Full distribution archive including the standalone .exe launcher, raw self-contained index.html,
                 Windows batch launcher (.bat), and offline quickstart readme.
@@ -744,7 +744,7 @@ export function Website({
               </div>
             </div>
             <button
-              onClick={() => handleDownload('Aetherfall-v0.9-Windows.zip')}
+              onClick={() => handleDownload('Aetherfall-v1.0-Windows.zip')}
               className="w-full py-3 rounded-lg bg-[#241c14] border border-[#e3b94f]/40 hover:border-[#f6dc8a] text-[#f6dc8a] font-bold text-sm hover:bg-[#33291e] transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>📦</span> Download Windows ZIP
@@ -890,9 +890,9 @@ export function Website({
             <div className="text-white font-bold mb-1"># Automated GitHub Actions Workflow (.github/workflows/deploy.yml)</div>
             <div>git push origin main</div>
             <div>├── 1. Checkout & Node 22 + Python 3.12 setup</div>
-            <div>├── 2. Run Test Suites (643 logic + world smoke + 36 UI + 53 play tests)</div>
+            <div>├── 2. Run Test Suites (730 logic + world smoke + 36 UI + 55 play tests)</div>
             <div>├── 3. Build Unified Production Bundle (dist/index.html + dist/404.html)</div>
-            <div>├── 4. Generate Standalone Executables (dist/Aetherfall-v0.9.exe)</div>
+            <div>├── 4. Generate Standalone Executables (dist/Aetherfall-v1.0.exe)</div>
             <div>└── 5. Deploy to GitHub Pages (https://l3xstud105.github.io/Aetherfall/)</div>
           </div>
         </div>
@@ -909,8 +909,8 @@ export function Website({
           <div className="flex flex-wrap justify-center gap-6 text-[#f6dc8a] font-medium pt-2">
             <button onClick={() => scrollToSection('hero')} className="hover:underline cursor-pointer">Back to Top</button>
             <button onClick={() => { scrollToSection('play'); onLaunchGame(); }} className="hover:underline cursor-pointer">Play in Browser</button>
-            <button onClick={() => handleDownload('Aetherfall-v0.9.exe')} className="hover:underline cursor-pointer">Download .EXE</button>
-            <button onClick={() => handleDownload('Aetherfall-v0.9-Windows.zip')} className="hover:underline cursor-pointer">Download .ZIP</button>
+            <button onClick={() => handleDownload('Aetherfall-v1.0.exe')} className="hover:underline cursor-pointer">Download .EXE</button>
+            <button onClick={() => handleDownload('Aetherfall-v1.0-Windows.zip')} className="hover:underline cursor-pointer">Download .ZIP</button>
             <button onClick={handleExportSave} className="hover:underline cursor-pointer">Export Save File</button>
             <a href={GITHUB_REPO} target="_blank" rel="noreferrer" className="hover:underline">GitHub Repository</a>
             <a href={GITHUB_PAGES_URL} target="_blank" rel="noreferrer" className="hover:underline">GitHub Pages</a>

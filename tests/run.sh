@@ -10,3 +10,6 @@ run "logic" tests/logic.test.ts
 run "world" tests/world.test.ts --external:peerjs
 run "ui" tests/ui.test.tsx --jsx=automatic
 run "play" tests/play.test.ts --alias:three=./tests/three-stub.ts
+run "multiplayer" tests/multiplayer.test.ts --alias:three=./tests/three-stub.ts --external:peerjs
+run "mmo_server" tests/mmo_server.test.ts --external:ws
+run "mmo_load" tests/mmo_load.test.ts --external:ws

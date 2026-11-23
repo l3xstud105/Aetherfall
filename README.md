@@ -1,10 +1,43 @@
-# AETHERFALL 0.9 — A Tale of Broken Skies
+# AETHERFALL 1.0 — A Tale of Broken Skies
 **L3X STUD105** · browser-first 3D third-person open-world fantasy RPG (Three.js + React + WebAudio + PeerJS)
 
 Play: `npm install && npm run build`, then open `dist/index.html` (single self-contained file). Dev: `npm run dev`.
 
 ---
-## 🌟 What's New in Version 0.9
+## 🌟 What's New in Version 1.0
+
+* **4 Complete Underground Dungeons:**
+  - **Whispering Catacombs (`crypt`):** Subterranean tomb complex beneath the Ruined Chapel (`95, -30`) filled with sarcophagi, soul torches, silver ore veins, crypt specters, and the legendary **Voidheart Talisman** (`relic_voidheart`).
+  - **Sunken Aether Temple (`sunken_temple`):** Flooded coastal sanctuary beneath the Sunken Veil (`210, 10`) featuring ancient pillars, bioluminescent water reflections, void reavers, and the legendary **Sunken Dawn Relic** (`relic_sunken`).
+  - **Bastion Undercroft (`fortress_undercroft`):** Underground garrison and armory beneath Fort Cinderwatch (`-10, 205`) with iron-barred dungeons, active forge, deserter knights, and the legendary **Heart of the Mountain** (`relic_mountain`).
+  - **Luminescent Grotto (`grotto`):** Cavernous fungal sanctuary behind Veilfall Cascade (`60, -150`) with glowing bioluminescent mushrooms, sapphire and emerald crystal clusters, and the legendary **Tempest Conduit** (`relic_tempest`).
+
+* **Elemental Reaction Matrix:**
+  - Dynamic elemental status interactions with procedural audio synthesis and unique VFX:
+    - **Conflagration (Fire + Wind):** Combustive AoE fire explosion dealing +60% bonus damage and staggering surrounding foes.
+    - **Superconductor (Ice + Lightning):** Cryo-electric shattering blast dealing +50% damage and instantly breaking enemy guard for 2.5s.
+    - **Vaporize (Fire + Water/Ice):** High-temperature steam blast delivering a massive **2.0×** damage multiplier.
+    - **Electro-Discharge (Lightning + Water):** High-voltage surge chaining lightning arcs to all nearby enemies within 7 meters.
+    - **Magma Eruption (Fire + Earth):** Volcanic molten slag eruption breaking armor poise (+50) and dealing +65% bonus damage.
+  - Dynamic wet state: foes swimming, standing in water, or caught in rainstorms naturally trigger water-element reactions.
+
+* **Multi-Phase Boss Battles:**
+  - Bosses (**Karreth the Hollow**, **The Gravewarden**, **The Rift Warden**, **The Aether Colossus**) enter **Phase II: Enraged** at `< 50% HP`.
+  - Phase II features immediate stagger recovery, enraged battle barks, crimson aura bursts, 35% faster attack cadence, and expanded multi-directional shockwaves.
+
+* **Living World Simulation & Ashenvale Outpost Rebuilding:**
+  - Dynamic survivor structures at the Ashenvale ruins plaza with timber stacks, carpenter workbenches, lanterns, and survivor tents.
+  - New merchants & quest givers:
+    - **Kaelen the Quartermaster:** Provisions, enchanted timber, and smithing stock at the Ashenvale rebuild outpost.
+    - **Rodrik the Caravaner:** Wandering merchant selling precious gemstones (Sapphire, Topaz, Emerald), treasure maps, and rare draughts.
+  - **Companion Loyalty Perks:** Active companions grant escalating stat benefits based on loyalty tier (Lyra: ranged & speed; Brann: health & defense; Iselle: mana & healing regen; Kestrel: stamina & crit; Corvin: spellblade attack & life steal).
+  - **Consumable Food & Potion Buffs:** Consuming apple cider, rejuvenation draughts, and hearty meals activates lingering vitality, warmth, rage, and stoneskin buffs.
+
+* **Timed Perfect Parry:**
+  - Timed 0.22s block reflects 100% incoming damage, inflicts full stagger break on the attacker, triggers procedural metallic parry chime audio (`audio.sfx('parry')`), and grants a +60% counterattack buff.
+
+---
+## 🌟 Features Established in Version 0.9
 
 * **5-Element Magic & Expanded Ability System:**
   - Fire (*Flame Slash* - sweeping fire arc + burn damage over time)
@@ -44,7 +77,7 @@ Play: `npm install && npm run build`, then open `dist/index.html` (single self-c
 * **Dedicated Game Website & Desktop Distribution:**
   - **Full Game Website Portal:** Includes Hero showcase, live in-browser playable viewport with fullscreen immersion, 5-element magic deep-dive, interactive 10-class codex, Valdoria world lore, controls guide, and release notes.
   - **Standalone Windows Executable (`Aetherfall.exe`):** Genuine 64-bit Windows PE GUI executable with embedded self-extracting game payload. Runs 100% offline with zero dependencies in a borderless app window.
-  - **Desktop Distribution Package (`Aetherfall-v0.9-Windows.zip`):** Complete archive containing `Aetherfall.exe`, standalone `index.html`, Windows batch launcher (`Aetherfall-Launcher.bat`), and offline instructions.
+  - **Desktop Distribution Package (`Aetherfall-v1.0-Windows.zip`):** Complete archive containing `Aetherfall.exe`, standalone `index.html`, Windows batch launcher (`Aetherfall-Launcher.bat`), and offline instructions.
 
 ---
 ## Controls (all remappable in Settings → Controls)

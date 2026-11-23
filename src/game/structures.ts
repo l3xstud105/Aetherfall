@@ -177,7 +177,10 @@ export function buildSettlements(parent: THREE.Object3D) {
     for (let i = 0; i < 4; i++) lamp(bk, S.x + 29 + i * 11, S.z + 3.5, 3); }
   // Ashenvale (ruined)
   { const S = SETTLEMENTS[4]; ST.anchors.ashenvale = { plaza: { x: S.x, z: S.z } }; const pl: Collider[] = []; for (let i = 0; i < S.houses; i++) { for (let t = 0; t < 40; t++) { const a = i * 0.8 + R() * 0.6, r = 8 + R() * 16, x = S.x + Math.cos(a) * r, z = S.z + Math.sin(a) * r; if (pl.some((c) => Math.abs(c.x0 - x) < 11 && Math.abs(c.z0 - z) < 11)) continue; pl.push({ x0: x, z0: z, x1: 0, z1: 0 }); house(bk, R, { x, z, w: 6 + R() * 3, d: 6 + R() * 3, floors: 1, style: 'burnt', door: 'S', broken: true }); break; } } ST.homes.length = ST.homes.length;
-    bk.cyl('stone', S.x, groundAt(S.x, S.z) + 0.3, S.z, 1.5, 0.6, '#3a3430'); for (let i = 0; i < 6; i++) bk.box('wood', S.x + (R() - 0.5) * 30, groundAt(S.x, S.z) + 1, S.z + (R() - 0.5) * 30, 0.3, 2 + R() * 2, 0.3, '#1c1714'); }
+    bk.cyl('stone', S.x, groundAt(S.x, S.z) + 0.3, S.z, 1.5, 0.6, '#3a3430'); for (let i = 0; i < 6; i++) bk.box('wood', S.x + (R() - 0.5) * 30, groundAt(S.x, S.z) + 1, S.z + (R() - 0.5) * 30, 0.3, 2 + R() * 2, 0.3, '#1c1714');
+    const gyA = groundAt(S.x, S.z); tent(bk, S.x - 8, S.z - 4, '#506850'); tent(bk, S.x + 8, S.z - 4, '#4a5a4a'); campfire(S.x, S.z + 4);
+    for (let i = 0; i < 4; i++) bk.box('wood', S.x - 5 + i * 1.6, gyA + 0.6, S.z + 8, 1.4, 0.9, 3.2, '#8a6540');
+    crate(bk, S.x + 4, S.z + 6, 1); crate(bk, S.x + 5.5, S.z + 6, 1); barrel(bk, S.x + 6, S.z + 7.5); lamp(bk, S.x - 2, S.z, 3); }
   buildLandmarks(bk, parent, R);
   bk.finish(parent);
   // waterfall foam mist handled in game
@@ -198,7 +201,8 @@ function buildLandmarks(bk: Baker, parent: THREE.Object3D, R: () => number) {
   { const cx = -10, cz = 205; const wc = '#4a423a'; for (const [a, b, c, d] of [[-18, -14, 18, -14], [18, -14, 18, 14], [-18, 14, -4, 14], [6, 14, 18, 14], [-18, -14, -18, 4]]) wallSeg(bk, cx + a, cz + b, cx + c, cz + d, 6, wc, 2.4); tower(bk, cx - 18, cz - 14, 3, 10, '#3e3730', '#2a2420'); tower(bk, cx + 18, cz - 14, 3, 10, '#3e3730', '#2a2420'); tower(bk, cx + 18, cz + 14, 3, 8, '#3e3730', '#2a2420');
     const ky = groundAt(cx, cz - 4); bk.box('stone', cx, ky + 5, cz - 6, 14, 10, 10, '#443c34'); bk.gable('roof', cx, ky + 10, cz - 6, 15, 3.5, 11, '#2a2420', 0, '#443c34'); addCol(cx, cz - 6, 14, 10, 'keep');
     tent(bk, cx - 10, cz + 4, '#5a3a2a'); tent(bk, cx + 10, cz + 4, '#5a3a2a'); campfire(cx, cz + 6); ST.anchors.fort = { x: cx, z: cz + 10 };
-    const b = new THREE.Mesh(new THREE.PlaneGeometry(2, 4.6, 4, 8), new THREE.MeshStandardMaterial({ color: '#c8302a', emissive: '#521008', side: THREE.DoubleSide })); b.position.set(cx - 18, ky + 9, cz - 14); parent.add(b); ST.banners.push(b); }
+    const b = new THREE.Mesh(new THREE.PlaneGeometry(2, 4.6, 4, 8), new THREE.MeshStandardMaterial({ color: '#c8302a', emissive: '#521008', side: THREE.DoubleSide })); b.position.set(cx - 18, ky + 9, cz - 14); parent.add(b); ST.banners.push(b);
+    ST.doors.push({ id: 'fortress_undercroft_door', x: cx - 10, z: cz + 8, fx: 0, fz: -1, interior: 'fortress_undercroft', label: 'Enter Bastion Undercroft', name: 'Bastion Undercroft', settle: 'fort' }); }
   // --- Cave entrance
   { const cx = -92, cz = -205, gy = groundAt(cx, cz); bk.box('stone', cx - 4, gy + 3, cz, 3, 6, 4, '#6a6862'); bk.box('stone', cx + 4, gy + 3, cz, 3, 6, 4, '#6a6862'); bk.box('stone', cx, gy + 6.4, cz, 11, 2.4, 4.4, '#5e5c56'); bk.box('stone', cx, gy + 9, cz, 14, 4, 6, '#64625c'); bk.box('dark', cx, gy + 2.5, cz + 0.3, 5, 5, 2, '#050505'); addCol(cx - 4, cz, 3, 4); addCol(cx + 4, cz, 3, 4); ST.torches.push({ x: cx - 2.4, y: gy + 3, z: cz + 2.4 }, { x: cx + 2.4, y: gy + 3, z: cz + 2.4 });
     ST.doors.push({ id: 'cave_door', x: cx, z: cz + 4.5, fx: 0, fz: 1, interior: 'cave', label: 'Enter Hollowdeep Mine', name: 'Hollowdeep Mine', settle: 'cave' }); }
@@ -206,8 +210,21 @@ function buildLandmarks(bk: Baker, parent: THREE.Object3D, R: () => number) {
   { const cx = -205, cz = 20; for (let i = 0; i < 8; i++) { const a = i / 8 * 6.28, x = cx + Math.cos(a) * 11, z = cz + Math.sin(a) * 11, h = 3 + R() * 2; bk.box('stone', x, groundAt(x, z) + h / 2, z, 1.2, h, 0.8, '#8aa8a0', a); addCol(x, z, 1.3, 1.3); } ST.anchors.grove = { x: cx, z: cz }; ST.updrafts.push({ x: cx, z: cz, r: 0.1, top: 0, mesh: glowMesh(cx, groundAt(cx, cz) + 4, cz, 11, 8, '#7affd8', 0.08) }); }
   // --- Smugglers cove
   { const cx = 222, cz = 112; tent(bk, cx - 5, cz - 3, '#3a4a58'); tent(bk, cx + 5, cz + 2, '#3a4a58'); for (let i = 0; i < 6; i++) crate(bk, cx - 3 + i * 1.2, cz + 5, 1); for (let i = 0; i < 4; i++) barrel(bk, cx + 8, cz - 4 + i); campfire(cx, cz); bk.box('wood', cx + 14, 0.3, cz + 4, 8, 1.2, 3, '#4a3320'); ST.anchors.cove = { x: cx, z: cz }; }
-  // --- Chapel ruin
-  { const cx = 95, cz = -30; for (const [dx, dz, w, d] of [[-6, 0, 0.8, 10], [6, 0, 0.8, 10], [0, 5, 12, 0.8], [-4, -5, 4, 0.8], [4, -5, 3, 0.8]]) { bk.box('stone', cx + dx, groundAt(cx + dx, cz + dz) + 2.5 * (0.5 + R() * 0.5), cz + dz, w, 4 * (0.5 + R() * 0.5), d, '#8a867c'); addCol(cx + dx, cz + dz, w, d); } bk.box('stone', cx, groundAt(cx, cz - 3) + 0.6, cz - 3, 3, 1.2, 1.5, '#aaa59a'); ST.anchors.chapel = { x: cx, z: cz }; }
+  // --- Chapel ruin & Crypt
+  { const cx = 95, cz = -30; for (const [dx, dz, w, d] of [[-6, 0, 0.8, 10], [6, 0, 0.8, 10], [0, 5, 12, 0.8], [-4, -5, 4, 0.8], [4, -5, 3, 0.8]]) { bk.box('stone', cx + dx, groundAt(cx + dx, cz + dz) + 2.5 * (0.5 + R() * 0.5), cz + dz, w, 4 * (0.5 + R() * 0.5), d, '#8a867c'); addCol(cx + dx, cz + dz, w, d); } bk.box('stone', cx, groundAt(cx, cz - 3) + 0.6, cz - 3, 3, 1.2, 1.5, '#aaa59a'); ST.anchors.chapel = { x: cx, z: cz };
+    ST.doors.push({ id: 'crypt_door', x: cx, z: cz - 4.5, fx: 0, fz: 1, interior: 'crypt', label: 'Enter Whispering Catacombs', name: 'Whispering Catacombs', settle: 'chapel' }); }
+  // --- Sunken Veil & Temple
+  { const cx = 210, cz = 10, gy = groundAt(cx, cz);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * 6.28, x = cx + Math.cos(a) * 9, z = cz + Math.sin(a) * 9; bk.cyl('stone', x, groundAt(x, z) + 3, z, 1.1, 6, '#3a505a'); addCol(x, z, 2.2, 2.2); }
+    bk.box('stone', cx, gy + 3, cz, 8, 1.2, 8, '#2a3a44');
+    ST.doors.push({ id: 'sunken_temple_door', x: cx, z: cz + 3, fx: 0, fz: -1, interior: 'sunken_temple', label: 'Enter Sunken Aether Temple', name: 'Sunken Aether Temple', settle: 'sunken_veil' });
+    ST.anchors.sunken_veil = { x: cx, z: cz + 4 }; }
+  // --- Veilfall Cascade & Luminescent Grotto
+  { const cx = 60, cz = -150, gy = groundAt(cx, cz);
+    bk.box('stone', cx - 3, gy + 3, cz - 2, 3, 6, 4, '#4a5048'); bk.box('stone', cx + 3, gy + 3, cz - 2, 3, 6, 4, '#4a5048'); bk.box('stone', cx, gy + 6.5, cz - 2, 9, 2, 4, '#3e443c');
+    addCol(cx - 3, cz - 2, 3, 4); addCol(cx + 3, cz - 2, 3, 4);
+    ST.doors.push({ id: 'grotto_door', x: cx, z: cz + 2, fx: 0, fz: 1, interior: 'grotto', label: 'Enter Luminescent Grotto', name: 'Luminescent Grotto', settle: 'waterfall' });
+    ST.anchors.waterfall = { x: cx, z: cz + 4 }; }
   // --- Lighthouse
   { const cx = 230, cz = -30, gy = groundAt(cx, cz); bk.cyl('plaster', cx, gy + 9, cz, 3, 22, '#e8e4d8'); bk.cyl('stone', cx, gy + 5, cz, 3.2, 3, '#c0382e'); bk.cyl('stone', cx, gy + 14, cz, 3.1, 3, '#c0382e'); bk.cyl('stone', cx, gy + 20.5, cz, 3.6, 1.2, '#444'); bk.cyl('glass', cx, gy + 22.2, cz, 2, 2.6, '#a8e4ff'); bk.cone('roof', cx, gy + 25, cz, 3.2, 3, '#3a3a44'); addCol(cx, cz, 6.4, 6.4, 'light'); ST.torches.push({ x: cx, y: gy + 22, z: cz, big: true }); ST.anchors.lighthouse = { x: cx, z: cz + 6 }; }
   // --- Lodge

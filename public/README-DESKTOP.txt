@@ -1,11 +1,11 @@
 ====================================================
-  AETHERFALL 0.9 - A Tale of Broken Skies
+  AETHERFALL 1.0 - A Tale of Broken Skies
   L3X STUD105 · 3D Open-World Fantasy Action RPG
 ====================================================
 
 OFFLINE PLAY INSTRUCTIONS:
 ----------------------------------------------------
-You can play Aetherfall 0.9 completely offline on any Windows PC!
+You can play Aetherfall 1.0 completely offline on any Windows PC!
 
 OPTION 1 (Recommended):
 Double-click "Aetherfall.exe".

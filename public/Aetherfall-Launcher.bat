@@ -1,10 +1,10 @@
 @echo off
-title Aetherfall 0.9 Launcher - L3X STUD105
+title Aetherfall 1.0 Launcher - L3X STUD105
 echo ====================================================
-echo        AETHERFALL 0.9 - A Tale of Broken Skies
+echo        AETHERFALL 1.0 - A Tale of Broken Skies
 echo                 L3X STUD105
 echo ====================================================
-echo Starting Aetherfall 0.9...
+echo Starting Aetherfall 1.0...
 
 :: Check if index.html exists
 if not exist "%~dp0index.html" (

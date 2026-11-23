@@ -42,4 +42,68 @@ ok(st.saveGame('1', true), 'save ok'); const info = st.slotInfo('1'); ok(info &&
 const exported = st.exportSaveJSON('1'); ok(typeof exported === 'string' && exported.length > 50, 'export save JSON');
 ok(st.importSaveJSON(exported, '3'), 'import save JSON to slot 3');
 const importedInfo = st.slotInfo('3'); ok(importedInfo && importedInfo.name === 'Hero', 'imported save slot info');
+
+// 0.9 expansion tests: Capstone skills, dungeon relics, companion perks, food buffs, shops & POIs
+['m8', 'g8', 'a12', 's8', 'w7'].forEach((sk) => ok(SKILLS.some((s) => s.id === sk), 'capstone skill ' + sk));
+['sword_ashen_flame', 'bow_stormstrider', 'staff_abyssal', 'greatsword_earthshaker'].forEach((w) => ok(ITEMS[w], 'expansion weapon ' + w));
+['relic_sunken', 'relic_voidheart', 'relic_mountain', 'relic_tempest'].forEach((r) => ok(ITEMS[r] && (ITEMS[r].slot === 'amulet' || ITEMS[r].slot === 'ring'), 'legendary dungeon relic ' + r));
+['potion_rejuvenation', 'cider', 'gem_sapphire', 'gem_topaz', 'gem_emerald', 'treasure_map_coast', 'treasure_map_peaks', 'treasure_map_woods'].forEach((it) => ok(ITEMS[it], 'expansion item ' + it));
+ok(SHOPS.kaelen && SHOPS.kaelen.stock.length >= 6, 'kaelen outpost shop exists');
+ok(SHOPS.rodrik && SHOPS.rodrik.stock.length >= 8, 'rodrik caravan shop exists');
+['catacombs', 'sunken_temple', 'bastion_undercroft', 'grotto'].forEach((poi) => ok(POIS.some((p) => p.id === poi), 'dungeon POI ' + poi));
+
+// test companion derived perks
+const d0 = st.derived();
+st.recruit('brann'); S.comp.brann.active = true; S.comp.brann.loyalty = 70;
+const dBrann = st.derived();
+ok(dBrann.maxHp > d0.maxHp && dBrann.def > d0.def, 'brann companion perk adds HP and DEF');
+S.comp.brann.active = false;
+
+st.recruit('lyra'); S.comp.lyra.active = true; S.comp.lyra.loyalty = 75;
+const dLyra = st.derived();
+ok(dLyra.rangedAtk > d0.rangedAtk && dLyra.speed > d0.speed, 'lyra companion perk adds ranged atk and speed');
+S.comp.lyra.active = false;
+
+st.recruit('iselle'); S.comp.iselle.active = true; S.comp.iselle.loyalty = 80;
+const dIselle = st.derived();
+ok(dIselle.maxMana > d0.maxMana && dIselle.regen > d0.regen, 'iselle companion perk adds mana and regen');
+S.comp.iselle.active = false;
+
+st.recruit('kestrel'); S.comp.kestrel.active = true; S.comp.kestrel.loyalty = 65;
+const dKestrel = st.derived();
+ok(dKestrel.maxSta > d0.maxSta && dKestrel.crit > d0.crit, 'kestrel companion perk adds stamina and crit');
+S.comp.kestrel.active = false;
+
+st.recruit('corvin'); S.comp.corvin.active = true; S.comp.corvin.loyalty = 70;
+const dCorvin = st.derived();
+ok(dCorvin.meleeAtk > d0.meleeAtk && dCorvin.magicAtk > d0.magicAtk, 'corvin companion perk adds melee and magic damage');
+S.comp.corvin.active = false;
+
+// test food buffs
+S.p.buffs = { vitality: 60, warmth: 60 };
+const dFood = st.derived();
+ok(dFood.maxHp > d0.maxHp && dFood.maxMana > d0.maxMana && dFood.regen > d0.regen, 'food buffs enhance derived vitals and regen');
+S.p.buffs = {};
+
+// test backward-compatible save migration (v0.8/v0.9 schema upgrade)
+const legacySave = JSON.stringify({
+  v: 1,
+  ts: 1600000000000,
+  summary: { name: 'OldHero', cls: 'warrior', level: 3, day: 2, gold: 50 },
+  d: {
+    p: {
+      name: 'OldHero', cls: 'warrior', level: 3, attrs: { str: 12, agi: 10, int: 8, vit: 12, wis: 8 },
+      inv: { sword_iron: 1, bread: 2 }, equip: { weapon: 'sword_iron' },
+      hotbar: ['power_strike', 'cleave'] // old 2-slot hotbar without buffs
+    },
+    rep: { crown: 5 },
+    quests: { main: { s: 1, obj: 'talk' } }
+  }
+});
+mem['aetherfall.save.legacy'] = legacySave;
+ok(st.loadGame('legacy'), 'legacy save loaded successfully');
+ok(S.p.hotbar.length === 5, 'legacy save hotbar upgraded to 5 slots');
+ok(S.p.buffs && typeof S.p.buffs === 'object', 'legacy save initialized with buffs map');
+ok(S.p.name === 'OldHero', 'legacy save character name preserved');
+
 console.log(`\n${pass} passed, ${fail} failed`); (globalThis as any).process.exit(fail ? 1 : 0);

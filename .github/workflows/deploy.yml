@@ -50,8 +50,8 @@ jobs:
           test -f dist/index.html
           test -f dist/404.html
           test -f dist/.nojekyll
-          test -f dist/Aetherfall-v0.9.exe
-          test -f dist/Aetherfall-v0.9-Windows.zip
+          test -f dist/Aetherfall-v1.0.exe
+          test -f dist/Aetherfall-v1.0-Windows.zip
 
       - name: Upload GitHub Pages Artifact
         uses: actions/upload-pages-artifact@v3

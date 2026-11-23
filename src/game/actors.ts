@@ -57,6 +57,8 @@ export const NPCDEFS: Record<string, any> = {
   hallguard1: { name: 'Palace Guard', role: 'guard', fac: 'crown', look: L('#d4a47c', 'short', '#2a1a10'), chest: ['plate', '#a4aebb'], helm: ['helm', '#b0b9c5'], weapon: ['sword', '#d5dde6'], pitch: 0.8 }, hallguard2: { name: 'Palace Guard', role: 'guard', fac: 'crown', look: L('#c99a72', 'short', '#2a1a10'), chest: ['plate', '#a4aebb'], helm: ['helm', '#b0b9c5'], weapon: ['sword', '#d5dde6'], pitch: 0.85 },
   patron1: { name: 'Patron', role: 'villager', look: L('#e0b48c', 'short', '#4a2f1b'), chest: ['cloth', '#6a5a3a'], pitch: 0.9 }, patron2: { name: 'Patron', role: 'villager', look: L('#c99a72', 'long', '#2a1a10'), chest: ['cloth', '#5a4a6a'], pitch: 1.1 },
   stranger: { name: 'Cloaked Stranger', role: 'villager', look: L('#c99a72', 'short', '#1a1a1a', '#555', 'stubble'), chest: ['leather', '#2a2a30'], helm: ['hood', '#2a2a30'], pitch: 0.85 },
+  kaelen: { name: 'Kaelen the Quartermaster', role: 'smith', fac: 'moon', s: 'ashenvale', post: 'plaza', off: [0, 0], look: L('#d4a47c', 'short', '#3a2010', '#5a7a5a', 'stubble'), chest: ['leather', '#5a7a4a'], act: 'work', pitch: 0.9 },
+  rodrik: { name: 'Rodrik the Caravaner', role: 'merchant', fac: 'league', s: 'highcrown', post: 'plaza', off: [14, 8], look: L('#c99a72', 'bun', '#2a1a10', '#3a3a3a', 'goatee'), chest: ['cloth', '#9c6b30'], act: 'talk', pitch: 1.0 },
   aether_stag: { name: 'Aether Stag', role: 'animal' },
 };
 export const npcApp = (d: any): Appearance => ({ ...d.look, chest: d.chest ? { style: d.chest[0], color: d.chest[1] } : { style: 'cloth', color: '#7b6a50' }, helm: d.helm ? { style: d.helm[0], color: d.helm[1] } : null, weapon: d.weapon ? { kind: d.weapon[0], color: d.weapon[1], bound: d.weapon[2] } : null, offhand: d.offhand ? { kind: d.offhand[0], color: d.offhand[1] } : null, cape: d.cape || null, robe: d.chest?.[0] === 'robe', boots: '#4a3322', trim: '#d9a93c', build: d.look.build, height: d.look.height });
@@ -174,7 +176,17 @@ export function spawnAnimal(kind: string, x: number, z: number, o: any = {}) {
 const landOK = (x: number, z: number, minH = 1.1) => { const h = groundAt(x, z); return h > minH && h < 60; };
 export function populateWorld() {
   G.enemies.forEach((f: any) => f.grp.parent?.remove(f.grp)); G.enemies.length = 0;
-  const camp = (cx: number, cz: number, list: [string, number][]) => { list.forEach(([t, n]) => { for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, r = 3 + Math.random() * 7; spawnFoe(t, cx + Math.cos(a) * r, cz + Math.sin(a) * r); } }); };
+  const camp = (cx: number, cz: number, list: [string, number][]) => {
+    let idx = 0;
+    list.forEach(([t, n]) => {
+      for (let i = 0; i < n; i++) {
+        const a = (idx * 1.3) % 6.28, r = 3 + (idx % 4) * 1.5;
+        const id = `camp_${cx}_${cz}_${t}_${i}`;
+        spawnFoe(t, cx + Math.cos(a) * r, cz + Math.sin(a) * r, { id });
+        idx++;
+      }
+    });
+  };
   camp(-118, 40, [['bandit', 4], ['bandit_archer', 1]]); camp(40, 120, [['bandit', 3], ['bandit_archer', 2]]); camp(-10, 205, [['bandit', 4], ['bandit_archer', 2], ['deserter', 1]]); spawnFoe('karreth', -10, 196, { id: 'karreth' });
   camp(222, 112, [['smuggler', 4]]); camp(95, -30, [['deserter', 2]]); camp(-170, -150, [['wraith', 3]]); camp(110, -150, [['scout', 7]]); camp(-120, -60 + 0, []);
   camp(210, 10, [['void_cultist', 3]]); spawnFoe('aether_golem', -80, -140, { id: 'aether_golem', noRespawn: true }); camp(-80, -140, [['void_cultist', 3]]);
@@ -197,18 +209,155 @@ export function populateWorld() {
   for (let i = 0; i < 40; i++) { const x = 205 + rr() * 40, z = -100 + rr() * 260; if (groundAt(x, z) > -1.5) continue; const f = buildFish(pickA(['#e8a23a', '#6aa0d0', '#c8c8d0'])); G.world.add(f.group); G.fish.push({ ...f, cx: x, cz: z, r: 3 + rr() * 6, a: rr() * 6, sp: 0.6 + rr() }); }
   for (let i = 0; i < 18; i++) { const a = rr() * 6.28, r = LAKE.r * (0.9 + rr() * 0.4); const x = LAKE.x + Math.cos(a) * r, z = LAKE.z + Math.sin(a) * r; const h = groundAt(x, z); if (h < 0.1 || h > 1.5) continue; const fr = buildFrog(); fr.position.set(x, h, z); G.world.add(fr); G.frogs.push({ g: fr, x, z, t: rr() * 5, vy: 0 }); }
 }
-export function spawnInteriorFoes(interior: any, parent: THREE.Object3D) { const out: Foe[] = []; interior.enemies.forEach((q: any) => { const f = spawnFoe(q.type, q.x, q.z, { parent, y: 0, zone: 'int', id: q.type === 'gravewarden' || q.type === 'rift_warden' ? q.type : undefined, noRespawn: true, inside: interior }); f.pos.y = 0; (f as any).grp.position.set(q.x, 0, q.z); out.push(f); }); return out; }
+export function spawnInteriorFoes(interior: any, parent: THREE.Object3D) { const out: Foe[] = []; interior.enemies.forEach((q: any, idx: number) => { const id = q.type === 'gravewarden' || q.type === 'rift_warden' ? q.type : `${interior.id || 'int'}_${q.type}_${idx}`; const f = spawnFoe(q.type, q.x, q.z, { parent, y: 0, zone: 'int', id, noRespawn: true, inside: interior }); f.pos.y = 0; (f as any).grp.position.set(q.x, 0, q.z); out.push(f); }); return out; }
 export function removeFoe(f: any) { f.grp.parent?.remove(f.grp); const i = G.enemies.indexOf(f); if (i >= 0) G.enemies.splice(i, 1); }
+
+export function applyRemoteFoeHit(m: any) {
+  let f = G.enemies.find((e: any) => e.id === m.id);
+  if (!f && m.type && m.x !== undefined && m.z !== undefined) {
+    f = G.enemies.find((e: any) => e.type === m.type && Math.hypot(e.pos.x - m.x, e.pos.z - m.z) < 8 && !e.dead);
+  }
+  if (!f || f.dead) return;
+  f._remoteHit = true;
+  try {
+    const sc = f.def?.sc || 1;
+    if (m.hp !== undefined) f.hp = Math.min(f.hp, m.hp);
+    else f.hp -= m.dmg;
+    f.hitT = 0.18; f.aggro = true;
+    if (m.phase && f.boss && f.phase !== m.phase) {
+      f.phase = m.phase;
+      floatText('PHASE II: ENRAGED!', new THREE.Vector3(f.pos.x, f.pos.y + 3.1 * sc, f.pos.z), '#ff2222', true);
+      audio.sfx('boss');
+      bark(f.name, 'Phase II: The seal is broken!', 3000);
+      emit('spark', f.pos.x, f.pos.y + 1.5, f.pos.z, '#ff3311', 50, 10, 1.2, 8);
+    }
+    if (m.reactionText) {
+      floatText(m.reactionText, new THREE.Vector3(f.pos.x, f.pos.y + 2.7 * sc, f.pos.z), m.reactionColor || '#ffa533', true);
+    }
+    floatText(String(Math.round(m.dmg)) + (m.crit ? '!' : ''), new THREE.Vector3(f.pos.x, f.pos.y + 2 * sc, f.pos.z), m.crit ? '#ffd24a' : '#ffffff', m.crit);
+    audio.sfx('hit');
+    if (f.hp <= 0 && !f.dead) {
+      killFoe(f);
+    }
+  } finally {
+    f._remoteHit = false;
+  }
+}
+
+export function applyBossSync(bosses: any[]) {
+  if (!bosses || !Array.isArray(bosses)) return;
+  bosses.forEach((b: any) => {
+    const f = G.enemies.find((e: any) => e.id === b.id);
+    if (!f) return;
+    f.hp = b.hp;
+    f.max = b.max;
+    if (b.phase) f.phase = b.phase;
+    if (b.dead && !f.dead) {
+      f.dead = true; f.state = 'dead';
+      if (f.grp?.parent) f.grp.parent.remove(f.grp);
+    }
+  });
+}
 
 export function damageFoe(f: any, dmg: number, el = 'phys', kb = 0, from?: THREE.Vector3, crit = false) {
   if (f.dead || f.invuln) return; if (f.ai === 'stag') { return; }
+
+  // Enemy Affinities & Resistances
+  let elMult = 1.0;
+  const fac = f.def?.fac, kind = f.def?.kind;
+  if (fac === 'undead' || kind === 'skeleton') {
+    if (el === 'holy' || el === 'fire') elMult *= 1.3;
+    else if (el === 'phys') elMult *= 0.85;
+  } else if (fac === 'rift' || kind === 'wraith') {
+    if (el === 'holy' || el === 'aether') elMult *= 1.25;
+    else if (el === 'phys') elMult *= 0.75;
+  } else if (kind === 'beast') {
+    if (el === 'fire') elMult *= 1.2;
+    else if (el === 'wind') elMult *= 0.85;
+  } else if (f.type === 'white_wolf') {
+    if (el === 'fire') elMult *= 1.4;
+    else if (el === 'ice') elMult *= 0.5;
+  } else if (f.type === 'aether_golem') {
+    if (el === 'earth' || el === 'phys') elMult *= 1.35;
+    else if (el === 'aether') elMult *= 0.7;
+  }
+
+  // Relic bonuses
+  if (S.p?.equip?.amulet === 'relic_sunken' && (fac === 'rift' || fac === 'undead')) elMult *= 1.2;
+  if (S.p?.equip?.amulet === 'relic_mountain' && (el === 'phys' || el === 'earth')) elMult *= 1.2;
+
+  // Elemental Reaction Matrix
+  if (!f.elements) f.elements = {};
+  if (!f.inside && groundAt(f.pos.x, f.pos.z) < 0.2) f.elements.water = 5.0;
+
+  let reactionText = '';
+  let reactionColor = '';
+  let bonusReactionDmg = 0;
+
+  if (el !== 'phys' && el !== 'none') {
+    if ((el === 'fire' && f.elements.wind) || (el === 'wind' && f.elements.fire)) {
+      reactionText = 'CONFLAGRATION!'; reactionColor = '#ff6622';
+      bonusReactionDmg = dmg * 0.6;
+      delete f.elements.wind; delete f.elements.fire;
+      audio.sfx('reaction_conflagration');
+      emit('spark', f.pos.x, f.pos.y + 1, f.pos.z, '#ff6a20', 35, 8, 0.8, 6);
+    } else if ((el === 'ice' && f.elements.lightning) || (el === 'lightning' && f.elements.ice)) {
+      reactionText = 'SUPERCONDUCTOR!'; reactionColor = '#60e0ff';
+      bonusReactionDmg = dmg * 0.5;
+      f.staggered = Math.max(f.staggered || 0, 2.5);
+      delete f.elements.ice; delete f.elements.lightning;
+      audio.sfx('reaction_superconductor');
+      emit('spark', f.pos.x, f.pos.y + 1, f.pos.z, '#a0f0ff', 35, 7, 0.7, 5);
+    } else if ((el === 'fire' && (f.elements.water || f.elements.ice)) || (el === 'water' && f.elements.fire)) {
+      reactionText = 'VAPORIZE 2×!'; reactionColor = '#ffa533';
+      elMult *= 2.0;
+      delete f.elements.water; delete f.elements.ice; delete f.elements.fire;
+      audio.sfx('reaction_vaporize');
+      emit('smoke', f.pos.x, f.pos.y + 1, f.pos.z, '#c8e0e8', 16, 2, 1.2, 0);
+    } else if ((el === 'lightning' && f.elements.water) || (el === 'water' && f.elements.lightning)) {
+      reactionText = 'ELECTRO-DISCHARGE!'; reactionColor = '#ffee44';
+      bonusReactionDmg = dmg * 0.45;
+      delete f.elements.water; delete f.elements.lightning;
+      audio.sfx('reaction_electro');
+      emit('spark', f.pos.x, f.pos.y + 1, f.pos.z, '#ffe844', 30, 8, 0.6, 6);
+      for (const other of G.enemies) {
+        if (other !== f && !other.dead && Math.hypot(other.pos.x - f.pos.x, other.pos.z - f.pos.z) < 7) {
+          damageFoe(other, dmg * 0.4, 'lightning', 2, f.pos);
+        }
+      }
+    } else if ((el === 'fire' && f.elements.earth) || (el === 'earth' && f.elements.fire)) {
+      reactionText = 'MAGMA ERUPTION!'; reactionColor = '#ff3300';
+      bonusReactionDmg = dmg * 0.65;
+      f.stagger = (f.stagger || 0) + 50;
+      delete f.elements.earth; delete f.elements.fire;
+      audio.sfx('reaction_magma');
+      emit('spark', f.pos.x, f.pos.y + 0.5, f.pos.z, '#ff3300', 40, 6, 1.0, 4);
+    } else {
+      f.elements[el] = 6.0;
+    }
+  }
+
   const isStaggered = (f.staggered || 0) > 0;
-  const effectiveDmg = isStaggered ? dmg * 1.35 : dmg;
-  f.hp -= effectiveDmg; f.hitT = 0.18; f.aggro = true; if (f.passive && f.ai === 'neutral') { f.passive = false; f.ai = 'hostile'; f.def = { ...f.def, dmg: f.def.dmg || 9 }; }
+  const effectiveDmg = (isStaggered ? dmg * 1.35 : dmg) * elMult + bonusReactionDmg;
+  f.hp -= effectiveDmg; f.hitT = 0.18; f.aggro = true;
+  if (f.passive && f.ai === 'neutral') { f.passive = false; f.ai = 'hostile'; f.def = { ...f.def, dmg: f.def.dmg || 9 }; }
   if (from && kb) { const dx = f.pos.x - from.x, dz = f.pos.z - from.z, l = Math.hypot(dx, dz) || 1; f.kb.set(dx / l * kb, 0, dz / l * kb); }
-  
+
+  const sc = f.def.sc || 1;
+  if (reactionText) {
+    floatText(reactionText, new THREE.Vector3(f.pos.x, f.pos.y + 2.7 * sc, f.pos.z), reactionColor, true);
+  }
+
+  // Boss Phase II Enrage
+  if (f.boss && (!f.phase || f.phase === 1) && f.hp <= f.max * 0.5) {
+    f.phase = 2; f.staggered = 0;
+    floatText('PHASE II: ENRAGED!', new THREE.Vector3(f.pos.x, f.pos.y + 3.1 * sc, f.pos.z), '#ff2222', true);
+    audio.sfx('boss');
+    bark(f.name, 'Phase II: The seal is broken!', 3000);
+    emit('spark', f.pos.x, f.pos.y + 1.5, f.pos.z, '#ff3311', 50, 10, 1.2, 8);
+  }
+
   if (!isStaggered && !f.passive) {
-    const sc = f.def.sc || 1;
     const thresh = f.boss ? 190 : 80;
     f.stagger = (f.stagger || 0) + dmg * (kb > 0 ? 1.6 : 1) * (crit ? 1.8 : 1);
     if (f.stagger >= thresh) {
@@ -220,8 +369,11 @@ export function damageFoe(f: any, dmg: number, el = 'phys', kb = 0, from?: THREE
     }
   }
 
-  floatText(String(Math.round(effectiveDmg)) + (crit ? '!' : '') + (isStaggered ? ' [VULN]' : ''), new THREE.Vector3(f.pos.x, f.pos.y + 2 * (f.def.sc || 1), f.pos.z), crit ? '#ffd24a' : isStaggered ? '#ffaa40' : el === 'fire' ? '#ff9a50' : el === 'ice' ? '#9fe8ff' : el === 'lightning' ? '#fff27a' : '#ffffff', crit);
+  floatText(String(Math.round(effectiveDmg)) + (crit ? '!' : '') + (isStaggered ? ' [VULN]' : ''), new THREE.Vector3(f.pos.x, f.pos.y + 2 * sc, f.pos.z), crit ? '#ffd24a' : isStaggered ? '#ffaa40' : el === 'fire' ? '#ff9a50' : el === 'ice' ? '#9fe8ff' : el === 'lightning' ? '#fff27a' : '#ffffff', crit);
   audio.sfx('hit'); G.player.lastTarget = f; G.player.targetT = 4;
+  if (G.net && (G.net.status === 'hosting' || G.net.status === 'joined') && !f._remoteHit) {
+    G.net.sendFoeHit(f, effectiveDmg, el, kb, crit, reactionText, reactionColor);
+  }
   if (f.hp <= 0) killFoe(f);
 }
 export function killFoe(f: any) {
@@ -246,6 +398,12 @@ export function updateFoes(dt: number) {
     const dx = pp.x - f.pos.x, dz = pp.z - f.pos.z, d = Math.hypot(dx, dz); const lim = f.passive ? c.animalDist : c.npcDist; const active = d < lim * 1.15 || inInt; f.grp.visible = d < lim || inInt;
     if (f.dead) { f.deadT += dt; if (f.rig) f.rig.update(dt, { act: 'dead', speed: 0 }); f.grp.position.y = f.pos.y; if (f.deadT > 5) { f.grp.scale.setScalar(Math.max(0.01, 1 - (f.deadT - 5) * 0.8)); } if (f.deadT > 6.2) { if (f.respawn && !f.respawnNow) { f.grp.visible = false; f.grp.scale.setScalar(1); if (f.respawnNow) { /* handled below */ } } if (f.respawn && f.respawnNow) { f.dead = false; f.hp = f.max; f.pos.copy(f.home); f.grp.scale.setScalar(1); f.respawnNow = false; f.state = 'idle'; f.aggro = false; if (f.creature) f.creature.update(0.01, { mode: 'idle' }); if (f.rig) f.rig.update(0.01, { act: 'none' }); } else if (!f.respawn) { removeFoe(f); } else f.grp.visible = false; } continue; }
     if (!active) continue; f.hitT = Math.max(0, f.hitT - dt); f.slow = Math.max(0, f.slow - dt); f.cd -= dt;
+    if (f.elements) {
+      for (const k in f.elements) {
+        f.elements[k] -= dt;
+        if (f.elements[k] <= 0) delete f.elements[k];
+      }
+    }
     if (f.staggered > 0) {
       f.staggered -= dt; f.atkT = 0; f.cd = Math.max(f.cd, 0.4);
       if (f.kb.lengthSq() > 0.01) { const [cx, cz] = collide(f.pos.x + f.kb.x * dt, f.pos.z + f.kb.z * dt, 0.5, f.inside || null); if (!f.inside || f.inside.walk(cx, cz)) { f.pos.x = cx; f.pos.z = cz; } f.kb.multiplyScalar(Math.exp(-dt * 7)); }
@@ -291,11 +449,38 @@ export function updateFoes(dt: number) {
 }
 const damp = (c: number, t: number, r: number, dt: number) => c + (t - c) * (1 - Math.exp(-r * dt));
 function bossSpecial(f: any, dt: number, d: number) {
-  f.spec.t -= dt; if (f.spec.t > 0) return; const P = G.player; f.spec.t = f.type === 'rift_warden' ? 7 : 9;
+  f.spec.t -= dt; if (f.spec.t > 0) return; const P = G.player;
+  const isPhase2 = f.phase === 2;
+  f.spec.t = (f.type === 'rift_warden' ? 7 : 9) * (isPhase2 ? 0.65 : 1);
   if (f.type === 'karreth' || f.type === 'gravewarden') { // shockwave telegraph
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 1, 32), new THREE.MeshBasicMaterial({ color: '#ff4a2a', transparent: true, opacity: 0.6, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.set(f.pos.x, (f.inside ? 0 : f.pos.y) + 0.1, f.pos.z); (f.inside ? f.grp.parent : G.world).add(ring); audio.sfx('boss');
-    G.fxList.push({ t: 0, dur: 1.1, update(k: number) { const s = 2 + k * 9; ring.scale.set(s, s, s); (ring.material as any).opacity = 0.7 - k * 0.5; if (k > 0.8 && !this.hit) { this.hit = true; const dd = Math.hypot(P.pos.x - f.pos.x, P.pos.z - f.pos.z); if (dd < 11 && !f.dead && (P.pos.y - (f.inside ? INT_Y : 0)) < f.pos.y + 3) G.hurtPlayer(f.def.dmg * 1.4, f, true); emit('spark', f.pos.x, f.pos.y + 0.4, f.pos.z, '#ff7a3a', 40, 8, 0.8, 8); } }, done() { ring.parent?.remove(ring); } });
-  } else if (f.type === 'rift_warden') { audio.sfx('spell_aether'); for (let i = -2; i <= 2; i++) { const ang = Math.atan2(P.pos.x - f.pos.x, P.pos.z - f.pos.z) + i * 0.25; G.spawnProj({ from: new THREE.Vector3(f.pos.x, f.pos.y + 2.5, f.pos.z), dir: new THREE.Vector3(Math.sin(ang), 0.02, Math.cos(ang)), speed: 18, dmg: f.def.dmg * 0.7, el: 'aether', foe: true, color: '#b08aff' }); } if (G.enemies.filter((e: any) => e.type === 'wraith' && !e.dead).length < 3) { const w = spawnFoe('wraith', f.pos.x + rnd(-6, 6), f.pos.z + rnd(4, 8), { parent: f.grp.parent, y: 0, zone: 'int', noRespawn: true, inside: f.inside }); w.aggro = true; w.pos.y = 0; } }
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.2, 1, 32), new THREE.MeshBasicMaterial({ color: isPhase2 ? '#ff1a1a' : '#ff4a2a', transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2; ring.position.set(f.pos.x, (f.inside ? 0 : f.pos.y) + 0.1, f.pos.z);
+    (f.inside ? f.grp.parent : G.world).add(ring); audio.sfx('boss');
+    G.fxList.push({ t: 0, dur: isPhase2 ? 0.8 : 1.1, update(k: number) {
+      const s = 2 + k * (isPhase2 ? 12 : 9); ring.scale.set(s, s, s); (ring.material as any).opacity = 0.7 - k * 0.5;
+      if (k > 0.8 && !this.hit) {
+        this.hit = true; const dd = Math.hypot(P.pos.x - f.pos.x, P.pos.z - f.pos.z);
+        if (dd < (isPhase2 ? 14 : 11) && !f.dead && (P.pos.y - (f.inside ? INT_Y : 0)) < f.pos.y + 3) G.hurtPlayer(f.def.dmg * (isPhase2 ? 1.7 : 1.4), f, true);
+        emit('spark', f.pos.x, f.pos.y + 0.4, f.pos.z, isPhase2 ? '#ff2a10' : '#ff7a3a', 45, 9, 0.8, 8);
+      }
+    }, done() { ring.parent?.remove(ring); } });
+  } else if (f.type === 'rift_warden') {
+    audio.sfx('spell_aether');
+    const spread = isPhase2 ? 4 : 2;
+    for (let i = -spread; i <= spread; i++) {
+      const ang = Math.atan2(P.pos.x - f.pos.x, P.pos.z - f.pos.z) + i * 0.22;
+      G.spawnProj({ from: new THREE.Vector3(f.pos.x, f.pos.y + 2.5, f.pos.z), dir: new THREE.Vector3(Math.sin(ang), 0.02, Math.cos(ang)), speed: 19, dmg: f.def.dmg * 0.7, el: 'aether', foe: true, color: '#b08aff' });
+    }
+    if (G.enemies.filter((e: any) => e.type === 'wraith' && !e.dead).length < 3) {
+      const w = spawnFoe('wraith', f.pos.x + rnd(-6, 6), f.pos.z + rnd(4, 8), { parent: f.grp.parent, y: 0, zone: 'int', noRespawn: true, inside: f.inside });
+      w.aggro = true; w.pos.y = 0;
+    }
+  } else if (f.type === 'aether_golem') {
+    audio.sfx('spell_earth');
+    emit('spark', f.pos.x, f.pos.y + 0.5, f.pos.z, '#7050aa', 50, 10, 1.2, 5);
+    const dd = Math.hypot(P.pos.x - f.pos.x, P.pos.z - f.pos.z);
+    if (dd < 12 && !f.dead) G.hurtPlayer(f.def.dmg * 1.3, f, true);
+  }
   void d;
 }
 
@@ -385,4 +570,46 @@ export function ensureRemote(id: string, info: any) {
 export function removeRemote(id: string) { const r = G.remotes.get(id); if (!r) return; bark('Multiplayer', `${r.info.name} left the world.`, 3500); r.rig.group.parent?.remove(r.rig.group); G.remotes.delete(id); }
 export function updateRemotes(dt: number) {
   G.remotes.forEach((r: any) => { r.pos.lerp(r.tp, Math.min(1, dt * 8)); const sp = r.pos.distanceTo(r.tp) / Math.max(dt, 0.001) * 0.4 + r.speed * 0.6; r.yaw = turn(r.yaw, r.ty, 10, dt); const vis = (r.inside || null) === (G.player.insideKey || null); r.rig.group.visible = vis; if (r.rig.group.parent !== (G.player.inside ? G.intGroup : G.world)) { r.rig.group.parent?.remove(r.rig.group); (G.player.inside ? G.intGroup : G.world).add(r.rig.group); } r.rig.group.position.set(r.pos.x, r.pos.y - (r.inside ? INT_Y : 0), r.pos.z); r.rig.root.rotation.y = r.yaw; r.rig.update(dt, { speed: r.speed, act: r.act, air: r.air || 'ground', crouch: r.crouch, at: (G.t * 2) % 1 }); void sp; });
+}
+
+export function applyServerSnapshot(snap: any) {
+  if (!snap) return;
+  if (Array.isArray(snap.players)) {
+    const activeIds = new Set<string>();
+    snap.players.forEach((p: any) => {
+      if (p.id === G.net?.myId || p.id === S.p?.id) return;
+      activeIds.add(p.id);
+      const r = ensureRemote(p.id, { name: p.name, cls: p.cls, look: p.look, equip: p.equip });
+      if (r) {
+        r.tp.set(p.x, p.y, p.z);
+        if (r.pos.lengthSq() === 0) r.pos.copy(r.tp);
+        r.ty = p.yaw || 0;
+        r.speed = p.sp || 0;
+        r.act = p.act || 'none';
+        r.air = p.air || 'ground';
+        r.crouch = !!p.cr;
+        r.inside = p.insideKey || null;
+      }
+    });
+    G.remotes.forEach((_r, id) => {
+      if (!activeIds.has(id) && G.net?.isRealm) {
+        removeRemote(id);
+      }
+    });
+  }
+
+  if (Array.isArray(snap.foes)) {
+    snap.foes.forEach((sf: any) => {
+      const f = G.enemies.find((e: any) => e.id === sf.id);
+      if (f) {
+        f.hp = sf.hp;
+        f.max = sf.max;
+        f.phase = sf.phase || 1;
+        if (sf.staggered) f.staggered = Math.max(f.staggered || 0, 1.0);
+        f.pos.x = f.pos.x * 0.7 + sf.x * 0.3;
+        f.pos.z = f.pos.z * 0.7 + sf.z * 0.3;
+        if (f.grp) f.grp.position.set(f.pos.x, f.pos.y, f.pos.z);
+      }
+    });
+  }
 }

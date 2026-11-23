@@ -6,14 +6,27 @@ import { appearanceFor } from '../game/actors';
 import { buildHumanoid } from '../game/rigs';
 import { api } from '../game/game';
 import { audio } from '../game/audio';
+import { net } from '../game/net';
 import { Bar, Btn, Slider, Toggle, Window, iconOf, keyLabel, sfx } from './ui';
 
 // ============ MAIN MENU
 export function MainMenu() {
   useUI(); const [sub, setSub] = useState(''); const stars = useMemo(() => [...Array(70)].map(() => ({ x: Math.random() * 100, y: Math.random() * 60, d: Math.random() * 3 })), []);
+  const [realmUser, setRealmUser] = useState('Hero');
+  const [realmPass, setRealmPass] = useState('');
+  const [realmHost, setRealmHost] = useState(typeof window !== 'undefined' && window.location ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.hostname}:7777` : 'ws://127.0.0.1:7777');
+
   useEffect(() => { audio.setMood('menu'); }, []);
   const mpJoin = new URLSearchParams(location.search).get('join');
   const start = (slot: string) => { audio.init(); if (loadGame(slot)) { S.screen = 'boot'; emitUI(); } };
+  const enterRealm = () => {
+    audio.init();
+    newPlayer(realmUser, 'warrior', defaultLook());
+    net.connectRealm(realmHost, realmUser, realmPass || undefined);
+    S.screen = 'boot';
+    emitUI();
+  };
+
   return (
     <div className="fixed inset-0 menu-sky overflow-hidden anim-fade" style={{ zIndex: 20 }} onMouseDown={() => audio.init()}>
       {stars.map((s, i) => <div key={i} className="star" style={{ left: s.x + '%', top: s.y + '%', animationDelay: s.d + 's' }} />)}
@@ -23,19 +36,49 @@ export function MainMenu() {
         <div className="dim" style={{ letterSpacing: '0.5em', fontSize: '0.9em' }}>L3X STUD105 PRESENTS</div>
         <div className="logo">AETHERFALL</div>
         <div className="title" style={{ fontSize: '1.5em', letterSpacing: '0.3em' }}>A Tale of Broken Skies</div>
-        <div className="dim mb-6" style={{ fontSize: '0.85em', color: 'var(--gold)' }}>Version 0.9</div>
-        <div className="flex flex-col gap-2.5" style={{ width: 300 }}>
-          {hasAnySave() && <Btn className="big" onClick={() => start(slotInfo('auto') ? 'auto' : ['1', '2', '3'].find((s) => slotInfo(s))!)}>▶ Continue</Btn>}
-          <Btn className={hasAnySave() ? '' : 'big'} onClick={() => { audio.init(); S.creatorMode = 'new'; S.screen = 'creator'; emitUI(); }}>⚔️ New Game</Btn>
-          <Btn disabled={!hasAnySave()} onClick={() => setSub('load')}>📂 Load Game</Btn>
+        <div className="dim mb-6" style={{ fontSize: '0.85em', color: 'var(--gold)' }}>Version 1.0.0 · Global MMORPG Edition</div>
+        <div className="flex flex-col gap-2.5" style={{ width: 320 }}>
+          <Btn className="big" style={{ background: 'linear-gradient(135deg, #1e3a8a, #2563eb)', border: '1px solid #60a5fa', boxShadow: '0 0 16px rgba(59, 130, 246, 0.4)' }} onClick={() => setSub('realm')}>🌐 Enter Global Realm (MMO)</Btn>
+          {hasAnySave() && <Btn onClick={() => start(slotInfo('auto') ? 'auto' : ['1', '2', '3'].find((s) => slotInfo(s))!)}>▶ Continue (Offline Campaign)</Btn>}
+          <Btn onClick={() => { audio.init(); S.creatorMode = 'new'; S.screen = 'creator'; emitUI(); }}>⚔️ New Game (Offline)</Btn>
+          <Btn disabled={!hasAnySave()} onClick={() => setSub('load')}>📂 Load Local Game</Btn>
           <Btn onClick={() => { S.ui.settings = true; emitUI(); }}>⚙️ Settings</Btn>
-          <Btn onClick={() => setSub('mp')}>🌐 Multiplayer</Btn><Btn onClick={() => setSub('about')}>📖 About & Notes</Btn>
+          <Btn onClick={() => setSub('mp')}>🔗 Peer Co-op (Legacy)</Btn>
+          <Btn onClick={() => setSub('about')}>📖 About & Notes</Btn>
         </div>
         {mpJoin && <div className="panel px-4 py-2 mt-4 anim-pop">Invite link detected: world <b>{mpJoin.toUpperCase()}</b>. Start or load a character — you'll join automatically.</div>}
       </div>
+      {sub === 'realm' && (
+        <Window title="Aetherfall Global Realm" icon="🌐" onClose={() => setSub('')} w="min(600px,96vw)" h="auto">
+          <div className="p-5 flex flex-col gap-4 text-left">
+            <div className="card p-3" style={{ background: 'rgba(30, 58, 138, 0.25)', borderColor: '#3b82f6' }}>
+              <div className="title" style={{ color: '#93c5fd' }}>One World. One Realm. Every Player.</div>
+              <div className="dim mt-1" style={{ fontSize: '0.9em', lineHeight: 1.5 }}>
+                Connect to the persistent global Aetherfall universe. Encounter other real players in Valdoria, team up for multi-player dungeon runs, trade items, and participate in a living world economy.
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="dim text-xs">CHARACTER / ACCOUNT USERNAME</label>
+              <input className="input" value={realmUser} maxLength={20} placeholder="Enter your character name..." onChange={(e) => setRealmUser(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="dim text-xs">PASSWORD (Optional for guest accounts)</label>
+              <input className="input" type="password" value={realmPass} placeholder="Optional password..." onChange={(e) => setRealmPass(e.target.value)} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="dim text-xs">REALM SERVER ADDRESS</label>
+              <input className="input" value={realmHost} placeholder="ws://localhost:7777" onChange={(e) => setRealmHost(e.target.value)} />
+            </div>
+            <div className="flex gap-2 justify-end mt-2">
+              <Btn onClick={() => setSub('')}>Cancel</Btn>
+              <Btn className="big" style={{ background: '#2563eb' }} disabled={!realmUser.trim()} onClick={enterRealm}>Connect & Enter Realm</Btn>
+            </div>
+          </div>
+        </Window>
+      )}
       {sub === 'load' && <Window title="Load Game" icon="📂" onClose={() => setSub('')} w="min(640px,96vw)" h="auto"><div className="p-4 flex flex-col gap-2">{['auto', '1', '2', '3'].map((s) => { const i = slotInfo(s); return <Btn key={s} disabled={!i} className="text-left" onClick={() => start(s)}><b>{s === 'auto' ? 'Autosave' : 'Slot ' + s}</b> — {i ? `${i.name} · Lv ${i.level} ${CLASSES.find((c) => c.id === i.cls)?.name} · Day ${i.day} · ${new Date(i.ts).toLocaleString()}` : 'Empty'}</Btn>; })}<div className="flex gap-2 pt-2 border-t border-line mt-2"><Btn className="sm flex-1" onClick={() => { const data = exportSaveJSON('auto') || exportSaveJSON('1'); if (!data) { toast('No save data to export.', 'error'); return; } const blob = new Blob([data], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aetherfall_save.json'; a.click(); URL.revokeObjectURL(url); }}>💾 Export Save</Btn><label className="btn sm flex-1 text-center cursor-pointer">📥 Import Save<input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { const text = ev.target?.result as string; if (importSaveJSON(text, 'auto')) setSub('load'); }; reader.readAsText(file); }} /></label></div></div></Window>}
-      {sub === 'mp' && <Window title="Multiplayer" icon="🌐" onClose={() => setSub('')} w="min(560px,96vw)" h="auto"><div className="p-5 flex flex-col gap-3"><div>Multiplayer is available from inside the game: start or load a character, then open the pause menu (Esc) → Multiplayer to host a world or join a friend with a 6-letter code or invite link.</div><div className="dim" style={{ fontSize: '0.85em' }}>Single-player is unaffected.</div></div></Window>}
-      {sub === 'about' && <Window title="About Aetherfall 0.9" icon="📖" onClose={() => setSub('')} w="min(720px,96vw)" h="min(620px,90vh)"><div className="p-5 flex flex-col gap-3" style={{ lineHeight: 1.5 }}><div><b>Aetherfall 0.9 — A Tale of Broken Skies</b> (L3X STUD105) is a complete 3D third-person open-world fantasy action RPG for modern browsers, Chromebooks, desktop, and laptops.</div><div className="card p-3"><div className="title">Major Features in 0.9</div><div className="dim" style={{ fontSize: '0.9em' }}>• 5-Element Magic System (Fire, Ice, Lightning, Earth, Wind)<br />• Advanced Combat: Poise & Stagger, Directional Defense, Perfect Parry & Counterattack<br />• 5 Companions including Corvin Vale (Spellblade) with customizable orders (Follow, Defend, Attack, Hold)<br />• Expanded Professions & Enchanting Station for imbuing gear<br />• New Polearms (Spears & Halberds) with distinct attack arcs and ranges<br />• New Wildlife (Mountain Ram), Void Cultists, and Aether Colossus boss<br />• Expanded Questlines with 4 distinct branching endings<br />• Enhanced PBR rendering, dynamic weather, seasonal cycles, procedural soundtrack, and peer-to-peer multiplayer</div></div><div className="dim">Studio: L3X STUD105 · Engine: Three.js 0.187 · UI: React 19 · Audio: Procedural WebAudio · Multiplayer: PeerJS WebRTC</div></div></Window>}
+      {sub === 'mp' && <Window title="Peer Co-op (Legacy)" icon="🔗" onClose={() => setSub('')} w="min(560px,96vw)" h="auto"><div className="p-5 flex flex-col gap-3"><div>Legacy peer-to-peer co-op allows hosting a private session via room code. For the persistent shared world, use the <b>Global Realm</b>.</div><div className="dim" style={{ fontSize: '0.85em' }}>Single-player campaign is unaffected.</div></div></Window>}
+      {sub === 'about' && <Window title="About Aetherfall 1.0" icon="📖" onClose={() => setSub('')} w="min(720px,96vw)" h="min(620px,90vh)"><div className="p-5 flex flex-col gap-3" style={{ lineHeight: 1.5 }}><div><b>Aetherfall 1.0.0 — A Tale of Broken Skies</b> (L3X STUD105) is a persistent 3D third-person open-world MMORPG for modern browsers, Chromebooks, desktop, and laptops.</div><div className="card p-3"><div className="title">Major Features in 1.0.0</div><div className="dim" style={{ fontSize: '0.9em' }}>• Persistent Global Realm with Authoritative Simulation, spatial interest management & SQLite/Postgres persistence<br />• 4 Complete Underground Dungeons: Whispering Catacombs, Sunken Aether Temple, Bastion Undercroft, Luminescent Grotto<br />• 5-Element Magic & Reactions: Conflagration, Superconductor, Vaporize (2×), Electro-Discharge, Magma Eruption<br />• Multi-Phase Boss Battles with Enraged Phase II mechanics, shockwaves, and projectile barrages<br />• Advanced Combat: Poise & Stagger, Directional Defense, Timed 0.22s Perfect Parry & Counterattack<br />• 5 Companions with loyalty perks, customizable orders (Follow, Defend, Attack, Hold), and companion questlines<br />• Two-Phase Secure Player-to-Player Trading, Parties, Guilds, and Global/Local/Whisper Chat channels<br />• Rebuilding of Ashenvale Outpost, Professions, Enchanting, and offline single-player mode</div></div><div className="dim">Studio: L3X STUD105 · Engine: Three.js 0.187 · UI: React 19 · Backend: Authoritative Node.js WS + SQLite</div></div></Window>}
     </div>
   );
 }
@@ -107,7 +150,7 @@ const ENDINGS: any = {
 };
 export function Ending() {
   useUI(); const e = ENDINGS[S.ui.ending] || ENDINGS.dawn; useEffect(() => { audio.sfx('levelup'); }, []);
-  return <div className="fixed inset-0 flex items-center justify-center p-6 anim-fade" style={{ zIndex: 60, background: 'radial-gradient(ellipse at center, #2a1a40, #04030a)' }}><div className="panel win text-center p-10" style={{ maxWidth: 720 }}><div className="dim" style={{ letterSpacing: '0.4em' }}>THE TALE ENDS… AND BEGINS</div><div className="logo" style={{ fontSize: '3em' }}>{e.t}</div><div style={{ lineHeight: 1.7, fontSize: '1.1em' }} className="my-5">{e.e}</div><div className="flex gap-3 justify-center"><Btn className="big" onClick={() => { S.screen = 'game'; S.ui.ending = null; sfx('confirm'); emitUI(); }}>Keep exploring Valdoria</Btn></div><div className="dim mt-4" style={{ fontSize: '0.8em' }}>Your choice has been recorded in your save. Thank you for playing Aetherfall 0.9 — L3X STUD105</div></div></div>;
+  return <div className="fixed inset-0 flex items-center justify-center p-6 anim-fade" style={{ zIndex: 60, background: 'radial-gradient(ellipse at center, #2a1a40, #04030a)' }}><div className="panel win text-center p-10" style={{ maxWidth: 720 }}><div className="dim" style={{ letterSpacing: '0.4em' }}>THE TALE ENDS… AND BEGINS</div><div className="logo" style={{ fontSize: '3em' }}>{e.t}</div><div style={{ lineHeight: 1.7, fontSize: '1.1em' }} className="my-5">{e.e}</div><div className="flex gap-3 justify-center"><Btn className="big" onClick={() => { S.screen = 'game'; S.ui.ending = null; sfx('confirm'); emitUI(); }}>Keep exploring Valdoria</Btn></div><div className="dim mt-4" style={{ fontSize: '0.8em' }}>Your choice has been recorded in your save. Thank you for playing Aetherfall 1.0 — L3X STUD105</div></div></div>;
 }
 
 // ============ SETTINGS
