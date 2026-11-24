@@ -9,6 +9,8 @@ export interface Account {
   id: string;
   username: string;
   password_hash: string;
+  salt: string;
+  session_token?: string;
   created_at: number;
   last_login: number;
 }
@@ -49,6 +51,7 @@ export interface Guild {
   leader_id: string;
   motd: string;
   level: number;
+  bank_gold: number;
   created_at: number;
 }
 
@@ -103,8 +106,25 @@ export interface PublicProfile {
   guild_tag?: string;
 }
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password + '_aetherfall_salt').digest('hex');
+function hashPasswordSecure(password: string, salt?: string): { hash: string; salt: string } {
+  const actualSalt = salt || crypto.randomBytes(16).toString('hex');
+  const derived = crypto.scryptSync(password, actualSalt, 32, { N: 1024, r: 8, p: 1 }).toString('hex');
+  return { hash: derived, salt: actualSalt };
+}
+
+function verifyPassword(password: string, storedHash: string, salt: string): boolean {
+  if (!storedHash) return true;
+  try {
+    if (salt) {
+      const derived = crypto.scryptSync(password, salt, 32, { N: 1024, r: 8, p: 1 }).toString('hex');
+      return crypto.timingSafeEqual(Buffer.from(derived, 'hex'), Buffer.from(storedHash, 'hex'));
+    } else {
+      const legacyHash = crypto.createHash('sha256').update(password + '_aetherfall_salt').digest('hex');
+      return crypto.timingSafeEqual(Buffer.from(legacyHash, 'hex'), Buffer.from(storedHash, 'hex'));
+    }
+  } catch {
+    return false;
+  }
 }
 
 export class DB {
@@ -132,6 +152,8 @@ export class DB {
         id TEXT PRIMARY KEY,
         username TEXT UNIQUE COLLATE NOCASE,
         password_hash TEXT,
+        salt TEXT DEFAULT '',
+        session_token TEXT,
         created_at INTEGER,
         last_login INTEGER
       );
@@ -173,6 +195,7 @@ export class DB {
         leader_id TEXT,
         motd TEXT DEFAULT 'Honor the Broken Skies.',
         level INTEGER DEFAULT 1,
+        bank_gold INTEGER DEFAULT 0,
         created_at INTEGER
       );
 
@@ -260,11 +283,12 @@ export class DB {
       throw new Error('Username must be 3-24 characters');
     }
     const id = 'acc_' + crypto.randomUUID().slice(0, 8);
-    const hash = password ? hashPassword(password) : '';
+    const { hash, salt } = password ? hashPasswordSecure(password) : { hash: '', salt: '' };
     const now = Date.now();
-    const stmt = this.db.prepare('INSERT INTO accounts (id, username, password_hash, created_at, last_login) VALUES (?, ?, ?, ?, ?)');
-    stmt.run(id, username, hash, now, now);
-    return { id, username, password_hash: hash, created_at: now, last_login: now };
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    const stmt = this.db.prepare('INSERT INTO accounts (id, username, password_hash, salt, session_token, created_at, last_login) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.run(id, username, hash, salt, sessionToken, now, now);
+    return { id, username, password_hash: hash, salt, session_token: sessionToken, created_at: now, last_login: now };
   }
 
   getAccountByUsername(username: string): Account | null {
@@ -275,6 +299,8 @@ export class DB {
       id: row.id,
       username: row.username,
       password_hash: row.password_hash,
+      salt: row.salt || '',
+      session_token: row.session_token || undefined,
       created_at: Number(row.created_at),
       last_login: Number(row.last_login)
     };
@@ -284,12 +310,16 @@ export class DB {
     username = username.trim();
     let acc = this.getAccountByUsername(username);
     if (!acc) {
-      // Auto-register guest account if password not provided or first login
       acc = this.createAccount(username, password);
-    } else if (password && acc.password_hash && acc.password_hash !== hashPassword(password)) {
-      throw new Error('Invalid credentials');
+    } else if (password && acc.password_hash) {
+      if (!verifyPassword(password, acc.password_hash, acc.salt)) {
+        throw new Error('Invalid credentials');
+      }
     }
-    this.db.prepare('UPDATE accounts SET last_login = ? WHERE id = ?').run(Date.now(), acc.id);
+    const sessionToken = crypto.randomBytes(32).toString('hex');
+    this.db.prepare('UPDATE accounts SET last_login = ?, session_token = ? WHERE id = ?').run(Date.now(), sessionToken, acc.id);
+    acc.session_token = sessionToken;
+    acc.last_login = Date.now();
     return acc;
   }
 
@@ -438,13 +468,13 @@ export class DB {
 
     const id = 'guild_' + crypto.randomUUID().slice(0, 8);
     const now = Date.now();
-    this.db.prepare('INSERT INTO guilds (id, name, tag, leader_id, created_at) VALUES (?, ?, ?, ?, ?)')
+    this.db.prepare('INSERT INTO guilds (id, name, tag, leader_id, bank_gold, created_at) VALUES (?, ?, ?, ?, 0, ?)')
       .run(id, name, tag, leaderId, now);
 
     this.addGuildMember(id, leaderId, 'leader');
     this.db.prepare('UPDATE characters SET guild_id = ? WHERE id = ?').run(id, leaderId);
 
-    return { id, name, tag, leader_id: leaderId, motd: 'Honor the Broken Skies.', level: 1, created_at: now };
+    return { id, name, tag, leader_id: leaderId, motd: 'Honor the Broken Skies.', level: 1, bank_gold: 0, created_at: now };
   }
 
   getGuild(guildId: string): Guild | null {
@@ -458,8 +488,31 @@ export class DB {
       leader_id: row.leader_id,
       motd: row.motd,
       level: Number(row.level),
+      bank_gold: Number(row.bank_gold || 0),
       created_at: Number(row.created_at)
     };
+  }
+
+  depositGuildGold(guildId: string, characterId: string, amount: number): boolean {
+    if (amount <= 0) return false;
+    const inv = this.getInventory(characterId);
+    if (!inv || inv.gold < amount) return false;
+    return this.runTransaction(() => {
+      this.updateGold(characterId, -amount);
+      this.db.prepare('UPDATE guilds SET bank_gold = COALESCE(bank_gold, 0) + ? WHERE id = ?').run(amount, guildId);
+      return true;
+    });
+  }
+
+  withdrawGuildGold(guildId: string, characterId: string, amount: number): boolean {
+    if (amount <= 0) return false;
+    const g = this.getGuild(guildId);
+    if (!g || g.bank_gold < amount) return false;
+    return this.runTransaction(() => {
+      this.db.prepare('UPDATE guilds SET bank_gold = bank_gold - ? WHERE id = ?').run(amount, guildId);
+      this.updateGold(characterId, amount);
+      return true;
+    });
   }
 
   addGuildMember(guildId: string, characterId: string, rank: GuildMember['rank'] = 'member') {

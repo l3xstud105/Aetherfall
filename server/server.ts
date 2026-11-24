@@ -116,6 +116,7 @@ export class AetherfallServer {
                 t: 'auth_ok',
                 accountId: acc.id,
                 username: acc.username,
+                sessionToken: acc.session_token,
                 characters: chars
               }));
             } catch (err: any) {
@@ -318,6 +319,26 @@ export class AetherfallServer {
             sessionPlayer.char.guild_id = guildId;
             const guild = this.db.getGuild(guildId);
             ws.send(JSON.stringify({ t: 'guild_joined', guild }));
+            break;
+          }
+
+          case 'guild_deposit': {
+            if (!sessionPlayer || !sessionPlayer.char.guild_id) return;
+            const amt = Math.max(0, Math.floor(Number(msg.amount) || 0));
+            if (this.db.depositGuildGold(sessionPlayer.char.guild_id, sessionPlayer.char.id, amt)) {
+              const guild = this.db.getGuild(sessionPlayer.char.guild_id);
+              ws.send(JSON.stringify({ t: 'guild_bank_updated', bank_gold: guild?.bank_gold || 0 }));
+            }
+            break;
+          }
+
+          case 'guild_withdraw': {
+            if (!sessionPlayer || !sessionPlayer.char.guild_id) return;
+            const amt = Math.max(0, Math.floor(Number(msg.amount) || 0));
+            if (this.db.withdrawGuildGold(sessionPlayer.char.guild_id, sessionPlayer.char.id, amt)) {
+              const guild = this.db.getGuild(sessionPlayer.char.guild_id);
+              ws.send(JSON.stringify({ t: 'guild_bank_updated', bank_gold: guild?.bank_gold || 0 }));
+            }
             break;
           }
 

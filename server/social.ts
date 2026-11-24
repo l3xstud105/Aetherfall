@@ -232,6 +232,11 @@ export class SocialManager {
         this.world.broadcastNearby(player.pos.x, player.pos.z, player.zone, packet);
         break;
       }
+      case 'emote': {
+        const emotePkt = { ...packet, text: text.startsWith(senderName) ? text : `${senderName} ${text}` };
+        this.world.broadcastNearby(player.pos.x, player.pos.z, player.zone, emotePkt);
+        break;
+      }
       case 'party': {
         const partyId = this.playerParty.get(player.char.id);
         if (partyId && this.parties.has(partyId)) {
