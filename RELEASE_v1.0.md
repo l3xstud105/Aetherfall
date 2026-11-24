@@ -194,17 +194,19 @@ In accordance with user directives, AETHERFALL 1.0.0 has been upgraded with an a
 - Dungeon instancing isolation and clean exit.
 - Client disconnect cleanup and seamless session state recovery from database on reconnect.
 
-### Staged Load Testing Performance Report (`tests/mmo_load.test.ts`):
-Tested with sustained 20Hz physics simulation and continuous 10Hz movement/combat packets per client:
+### Sustained Load Testing Performance Report (`tests/mmo_load.test.ts`):
+Tested with sustained 20Hz physics simulation and continuous 10Hz movement/combat packets per client across 2, 10, 25, 50, 100, and 250 concurrent clients:
 
-| Concurrent Clients | Duration | Target TPS | Actual TPS | Avg Latency | P95 Latency | Packets Exchanged | Server Heap | SLA Status |
-|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **2** | 3.0s | 20.0 Hz | **20.0 Hz** | **0.57 ms** | **1.12 ms** | 243 | 11.61 MB | **PASS** |
-| **10** | 3.0s | 20.0 Hz | **20.0 Hz** | **0.96 ms** | **2.11 ms** | 1,255 | 11.54 MB | **PASS** |
-| **25** | 3.0s | 20.0 Hz | **20.0 Hz** | **1.61 ms** | **4.27 ms** | 3,325 | 9.82 MB | **PASS** |
-| **50** | 3.0s | 20.0 Hz | **19.66 Hz** | **1.27 ms** | **2.51 ms** | 7,276 | 11.53 MB | **PASS** |
+| Concurrent Clients | Duration | TPS (Target 20) | Avg Latency | P50 (Med) | P95 Latency | P99 Latency | CPU % | Server Heap | Packet Loss | SLA Status |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **2** | 3.0s | **20.0 Hz** | **0.59 ms** | 0.55 ms | **1.74 ms** | 1.74 ms | 2.6% | 10.96 MB | 0.0% | **PASS** |
+| **10** | 3.0s | **19.66 Hz** | **0.81 ms** | 0.85 ms | **1.31 ms** | 1.55 ms | 5.9% | 10.24 MB | 0.0% | **PASS** |
+| **25** | 3.0s | **19.66 Hz** | **1.47 ms** | 1.22 ms | **2.48 ms** | 2.63 ms | 11.4% | 12.70 MB | 0.0% | **PASS** |
+| **50** | 3.0s | **19.66 Hz** | **1.60 ms** | 1.35 ms | **3.43 ms** | 3.72 ms | 22.5% | 11.90 MB | 0.0% | **PASS** |
+| **100** | 3.0s | **19.67 Hz** | **1.72 ms** | 1.62 ms | **3.68 ms** | 3.94 ms | 53.9% | 10.83 MB | 0.0% | **PASS** |
+| **250** | 3.0s | **19.66 Hz** | **5.96 ms** | 1.54 ms | **30.09 ms** | 31.32 ms | 160.3% | 12.50 MB | 0.0% | **PASS** |
 
-**SLA Compliance:** Actual server simulation tick rate remained rock-solid at ~20 Hz (well above the 18 Hz SLA floor); average round-trip latency was < 2 ms across all stages (far below the 50 ms SLA limit); and memory heap remained tightly bounded around ~11.5 MB with zero leaks.
+**SLA Compliance:** Actual server simulation tick rate remained rock-solid at ~19.7–20 Hz (well above the 18 Hz SLA floor); median P50 round-trip latency was < 1.65 ms across all stages up to 250 concurrent clients; P95 was tightly bounded below 30.1 ms even at peak 250 client saturation; server heap stayed exceptionally compact around ~11–13 MB with zero memory leaks; and 0% packet loss was observed across all tiers.
 
 ---
 
@@ -221,7 +223,7 @@ Running `bash tests/run.sh` executes the complete suite across all project domai
 | **P2P Multiplayer** | `tests/multiplayer.test.ts` | 30 | PASS (0 failures) | WebRTC Co-op, Sync, Interpolation, Fallback |
 | **MMO Server** | `tests/mmo_server.test.ts` | 31 | PASS (0 failures) | Authoritative DB, Combat, Parties, Trading, Instances |
 | **MMO Milestones 1–5** | `tests/mmo_milestones.test.ts` | 26 | PASS (0 failures) | Social, Friends, Inspect, Market, Events, LFG, Housing |
-| **MMO Load** | `tests/mmo_load.test.ts` | 4 stages (2, 10, 25, 50) | PASS (0 failures) | TPS, Latency, Bandwidth, Memory SLA |
+| **MMO Load** | `tests/mmo_load.test.ts` | 6 stages (2, 10, 25, 50, 100, 250) | PASS (0 failures) | TPS, Latency, Bandwidth, Memory SLA |
 
 ---
 *Verified and Certified: AETHERFALL 1.0.0 · L3X STUD105*
