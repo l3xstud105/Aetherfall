@@ -268,6 +268,10 @@ const KEY = (slot: string) => 'aetherfall.save.' + slot;
 export function snapshot() { bus.emit('presave'); return { rep: S.rep, quests: S.quests, flags: S.flags, comp: S.comp, houses: S.houses, farm: S.farm, world: S.world, discovered: S.discovered, lore: S.lore, tracked: S.ui.tracked, p: S.p }; }
 export function saveGame(slot = 'auto', quiet = false) {
   if (!S.p) return false;
+  // Realm characters are persisted authoritatively server-side (SQLite, per-account).
+  // Never write online character state to localStorage — offline slots stay separate.
+  // S.realm is set by net.ts when a realm character is selected (avoids an import cycle).
+  if (S.realm) { if (!quiet) toast('Realm character is saved server-side.', 'info'); return false; }
   try { const d = snapshot(); localStorage.setItem(KEY(slot), JSON.stringify({ v: SAVE_VERSION, ts: Date.now(), summary: { name: S.p.name, cls: S.p.cls, level: S.p.level, day: S.world.day, gold: S.p.gold }, d })); if (!quiet) { toast(`Game saved (${slot === 'auto' ? 'autosave' : 'slot ' + slot}).`, 'info'); audio.sfx('confirm'); } return true; }
   catch (e) { toast('Save failed: storage unavailable.', 'error'); return false; }
 }

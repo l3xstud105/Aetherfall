@@ -138,6 +138,7 @@ export class Net {
       case 'char_ok': {
         this.isRealm = true;
         this.myId = m.character.id;
+        S.realm = true; // authoritative online character — localStorage saves blocked
         this.set('realm');
         this.onlineCount = m.onlineCount || 1;
         toast('Connected to Aetherfall Global Realm!', 'unlock');
@@ -386,6 +387,7 @@ export class Net {
     try { this.peer?.destroy(); } catch {}
     try { this.realmWs?.close(); } catch {}
     this.realmWs = null;
+    S.realm = false; // left the realm — offline saves permitted again
     this.peer = null;
     this.conns.clear();
     this.hostConn = null;
