@@ -2,12 +2,35 @@
 // One persistent world. Server-authoritative physics, combat, persistence, social, and trading.
 import { WebSocketServer, WebSocket } from 'ws';
 import * as http from 'http';
+import * as fs from 'fs';
+import * as path from 'path';
 import { DB, PersistentCharacter } from './db';
 import { WorldSimulation, ServerPlayer } from './world';
 import { AuthoritativeCombat } from './combat';
 import { SocialManager } from './social';
 import { DungeonManager } from './instances';
 import { MarketplaceManager } from './marketplace';
+
+const MIME_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.mjs': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.exe': 'application/octet-stream',
+  '.zip': 'application/zip',
+  '.bat': 'text/plain',
+  '.txt': 'text/plain; charset=utf-8',
+};
 
 export class AetherfallServer {
   port: number;
@@ -37,7 +60,21 @@ export class AetherfallServer {
   start(): Promise<void> {
     return new Promise((resolve) => {
       this.server = http.createServer((req, res) => {
-        if (req.url === '/health') {
+        // Set CORS and preview headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
+          return;
+        }
+
+        const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+        const pathname = decodeURIComponent(parsedUrl.pathname);
+
+        if (pathname === '/health') {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({
             status: 'online',
@@ -49,8 +86,37 @@ export class AetherfallServer {
           }));
           return;
         }
-        res.writeHead(404);
-        res.end();
+
+        // Serve static assets from dist/
+        const distDir = path.resolve(process.cwd(), 'dist');
+        const relativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+        const filePath = path.join(distDir, relativePath);
+
+        // Security check: ensure filePath is inside distDir
+        if (!filePath.startsWith(distDir)) {
+          res.writeHead(403);
+          res.end('Forbidden');
+          return;
+        }
+
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mime = MIME_TYPES[ext] || 'application/octet-stream';
+          res.writeHead(200, { 'Content-Type': mime });
+          fs.createReadStream(filePath).pipe(res);
+          return;
+        }
+
+        // SPA fallback: return index.html if file not found
+        const indexPath = path.join(distDir, 'index.html');
+        if (fs.existsSync(indexPath)) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+          fs.createReadStream(indexPath).pipe(res);
+          return;
+        }
+
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Aetherfall Realm Server: Not Found');
       });
 
       this.wss = new WebSocketServer({ server: this.server });
