@@ -18,9 +18,16 @@ export const defaultSettings = () => ({
 });
 export const S: any = {
   screen: 'menu', creatorMode: 'new', p: null, rep: {}, quests: {}, flags: {}, comp: {}, houses: {}, farm: {}, world: { time: 9, day: 1, weather: 'clear', clock: 0 }, discovered: {}, lore: {}, settings: defaultSettings(),
-  ui: { codex: null as string | null, dialogue: null as any, shop: null as any, stable: false, houseSale: false, houseEdit: false, storage: false, confirm: null as any, toasts: [] as any[], subtitle: null as any, pause: false, settings: false, mp: false, prompt: null as any, loading: null as any, chat: false, tutorialSeen: {} as any, fish: null as any, dead: false, ending: null as any, mapWaypoint: null as any },
+  ui: { codex: null as string | null, dialogue: null as any, shop: null as any, stable: false, houseSale: false, houseEdit: false, storage: false, confirm: null as any, toasts: [] as any[], subtitle: null as any, pause: false, settings: false, mp: false, social: false, market: false, inspect: false, trade: false, prompt: null as any, loading: null as any, chat: false, tutorialSeen: {} as any, fish: null as any, dead: false, ending: null as any, mapWaypoint: null as any },
   hud: { hp: 100, mana: 50, sta: 100, region: '', time: '', weather: '', boss: null as any, target: null as any, cd: [0, 0, 0, 0, 0], buffs: [] as any[], mounted: false, glide: false, compass: 0, inside: false, speaking: null, fps: 0, input: 'kb', pad: 'xbox', msg: '', nearHint: null as any, combat: false, tracking: false },
   chatLog: [] as any[],
+  party: null as any,
+  trade: null as any,
+  friends: [] as any[],
+  inspectTarget: null as any,
+  lfg: { status: 'idle', dungeon: null as string | null, queueSize: 0 },
+  market: { listings: [] as any[], myListings: [] as any[] },
+  worldEvent: null as any,
 };
 export const resetWorldState = () => { S.rep = Object.fromEntries(Object.keys(FACTIONS).map((k) => [k, 0])); S.quests = {}; S.flags = {}; S.comp = {}; S.houses = {}; S.farm = {}; S.world = { time: 9, day: 1, weather: 'clear', clock: 0 }; S.discovered = {}; S.lore = {}; };
 resetWorldState();
@@ -30,7 +37,7 @@ export const defaultLook = () => ({ build: 1, height: 1, skin: '#e0b48c', hair: 
 export function newPlayer(name: string, clsId: string, look: any) {
   const c = CLASSES.find((x) => x.id === clsId)!;
   const equip: any = {}; Object.entries(c.equip).forEach(([s, id]) => (equip[s] = id));
-  const p: any = { name, cls: clsId, look, level: 1, xp: 0, attrs: { ...c.attrs }, unspent: 3, sp: 1, skills: {}, abilities: [...c.abilities], hotbar: [c.abilities[0], c.abilities[1], null, null, null], hp: 1, mana: 1, sta: 1, gold: 120, inv: {}, equip, mastery: { melee: 0, ranged: 0, magic: 0 }, mounts: ['horse'], mount: 'horse', prof: {}, pos: { x: -140, y: 0, z: 100, ry: 0 }, kills: 0, playtime: 0 };
+  const p: any = { name, cls: clsId, look, level: 1, xp: 0, attrs: { ...c.attrs }, unspent: 3, sp: 1, skills: {}, abilities: [...c.abilities], hotbar: [c.abilities[0], c.abilities[1], null, null, null], hp: 1, mana: 1, sta: 1, gold: 120, inv: {}, equip, mastery: { melee: 0, ranged: 0, magic: 0 }, mounts: ['horse'], mount: 'horse', prof: {}, pos: { x: -140, y: 0, z: 100, ry: 0 }, kills: 0, playtime: 0, buffs: {} };
   Object.values(equip).forEach((id: any) => { p.inv[id] = 1; });
   p.inv.potion_health = 3; p.inv.bread = 3; p.inv.potion_mana = 1;
   Object.keys(PROFS).forEach((k) => (p.prof[k] = { lvl: 1, xp: 0 }));
@@ -49,15 +56,66 @@ export function derived() {
   const p = S.p, a = p.attrs, m = skillMods(), L = p.level, w = ITEMS[p.equip.weapon];
   const masteryB = (k: string) => 1 + Math.floor(Math.sqrt(p.mastery[k] / 12)) * 0.02;
   const kind = w?.kind || 'fist'; const isRanged = kind === 'bow', isMagic = kind === 'staff';
-  const meleeAtk = ((w?.atk || 4) + a.str * 1.3 + a.dex * 0.35) * (1 + m.melee) * masteryB('melee');
-  const rangedAtk = ((w?.atk || 4) + a.dex * 1.5) * (1 + m.ranged) * masteryB('ranged');
-  const magicAtk = ((w?.mag || 0) + 6 + a.int * 2.2 + a.wis * 0.6) * (1 + m.magic) * masteryB('magic');
+
+  let compHp = 0, compMana = 0, compSta = 0, compDef = 0;
+  let compMelee = 0, compRanged = 0, compMagic = 0;
+  let compCrit = 0, compSpeed = 0, compRegen = 0, compSteal = 0, compGather = 0;
+
+  if (S.comp) {
+    Object.entries(S.comp).forEach(([id, st]: any) => {
+      if (!st?.recruited || !st?.active) return;
+      const loy = st.loyalty || 40;
+      const tier2 = loy >= 60;
+      if (id === 'lyra') {
+        compRanged += tier2 ? 0.20 : 0.10;
+        compSpeed += tier2 ? 0.08 : 0.04;
+        compCrit += tier2 ? 0.05 : 0.02;
+      } else if (id === 'brann') {
+        compHp += tier2 ? 40 : 20;
+        compDef += tier2 ? 8 : 4;
+        compMelee += tier2 ? 0.15 : 0.08;
+      } else if (id === 'iselle') {
+        compMana += tier2 ? 45 : 20;
+        compRegen += tier2 ? 0.25 : 0.12;
+        compMagic += tier2 ? 0.15 : 0.08;
+      } else if (id === 'kestrel') {
+        compSta += tier2 ? 25 : 12;
+        compCrit += tier2 ? 0.08 : 0.04;
+        compGather += tier2 ? 0.25 : 0.12;
+      } else if (id === 'corvin') {
+        compMelee += tier2 ? 0.12 : 0.06;
+        compMagic += tier2 ? 0.12 : 0.06;
+        compSteal += tier2 ? 0.08 : 0.04;
+      }
+    });
+  }
+
+  const buffs: any = p.buffs || {};
+  let foodDef = 0, foodHp = 0, foodMana = 0, foodSpeed = 0, foodMelee = 0, foodMagic = 0, foodRegen = 0;
+  if (buffs.warmth > 0) { foodHp += 15; foodRegen += 0.15; }
+  if (buffs.vitality > 0) { foodHp += 30; foodMana += 30; foodRegen += 0.25; }
+  if (buffs.speed > 0) { foodSpeed += 0.15; }
+  if (buffs.stone_armor > 0) { foodDef += 25; }
+  if (buffs.rage > 0) { foodMelee += 0.20; foodMagic += 0.20; }
+  if (buffs.wall > 0) { foodDef += 20; }
+
+  const meleeAtk = ((w?.atk || 4) + a.str * 1.3 + a.dex * 0.35) * (1 + m.melee + compMelee + foodMelee) * masteryB('melee');
+  const rangedAtk = ((w?.atk || 4) + a.dex * 1.5) * (1 + m.ranged + compRanged) * masteryB('ranged');
+  const magicAtk = ((w?.mag || 0) + 6 + a.int * 2.2 + a.wis * 0.6) * (1 + m.magic + compMagic + foodMagic) * masteryB('magic');
   const cap = 70 + a.str * 6;
   let weight = 0; Object.entries(p.inv).forEach(([id, n]: any) => { weight += (ITEMS[id]?.weight || 0) * n; });
   return {
-    maxHp: Math.round(60 + a.vit * 10 + L * 6 + gear('hp') + m.hp), maxMana: Math.round(30 + a.int * 5 + a.wis * 4 + L * 3 + gear('mana') + m.mana), maxSta: Math.round(80 + a.dex * 2 + a.vit * 2 + m.sta),
-    def: Math.round(a.vit * 0.5 + gear('def') + m.def), meleeAtk, rangedAtk, magicAtk, crit: 0.05 + a.dex * 0.005 + m.crit, speed: 1 + m.speed + gear('speed'), regen: 1 + m.regen, steal: m.steal, cap, weight, over: weight > cap,
-    isRanged, isMagic, kind, atkPower: isRanged ? rangedAtk : isMagic ? magicAtk : meleeAtk, gather: m.gather,
+    maxHp: Math.round(60 + a.vit * 10 + L * 6 + gear('hp') + m.hp + compHp + foodHp),
+    maxMana: Math.round(30 + a.int * 5 + a.wis * 4 + L * 3 + gear('mana') + m.mana + compMana + foodMana),
+    maxSta: Math.round(80 + a.dex * 2 + a.vit * 2 + m.sta + compSta),
+    def: Math.round(a.vit * 0.5 + gear('def') + m.def + compDef + foodDef),
+    meleeAtk, rangedAtk, magicAtk, crit: 0.05 + a.dex * 0.005 + m.crit + compCrit,
+    speed: 1 + m.speed + gear('speed') + compSpeed + foodSpeed,
+    regen: 1 + m.regen + compRegen + foodRegen,
+    steal: m.steal + compSteal,
+    cap, weight, over: weight > cap,
+    isRanged, isMagic, kind, atkPower: isRanged ? rangedAtk : isMagic ? magicAtk : meleeAtk,
+    gather: m.gather + compGather,
   };
 }
 export const xpFor = (l: number) => Math.round(90 * Math.pow(l, 1.55));
@@ -89,7 +147,7 @@ export function useItem(id: string) {
   const it = ITEMS[id]; if (!it?.use) return; const p = S.p, d = derived(), u = it.use;
   if (!removeItem(id, 1)) return;
   if (u.hp) p.hp = Math.min(d.maxHp, p.hp + u.hp); if (u.mana) p.mana = Math.min(d.maxMana, p.mana + u.mana); if (u.sta) p.sta = Math.min(d.maxSta, p.sta + u.sta);
-  if (u.buff) bus.emit('buff', u.buff, u.dur);
+  if (u.buff) { p.buffs = p.buffs || {}; p.buffs[u.buff] = u.dur; bus.emit('buff', u.buff, u.dur); }
   audio.sfx(it.id.startsWith('potion') || it.id.startsWith('elixir') ? 'drink' : 'eat'); toast(`Used ${it.name}.`, 'info'); emitUI(); emitHud();
 }
 export function sellPrice(id: string, fac?: string) { return Math.max(1, Math.floor(ITEMS[id].value * 0.45 * (fac ? 1 / priceMod(fac) : 1))); }
@@ -210,6 +268,10 @@ const KEY = (slot: string) => 'aetherfall.save.' + slot;
 export function snapshot() { bus.emit('presave'); return { rep: S.rep, quests: S.quests, flags: S.flags, comp: S.comp, houses: S.houses, farm: S.farm, world: S.world, discovered: S.discovered, lore: S.lore, tracked: S.ui.tracked, p: S.p }; }
 export function saveGame(slot = 'auto', quiet = false) {
   if (!S.p) return false;
+  // Realm characters are persisted authoritatively server-side (SQLite, per-account).
+  // Never write online character state to localStorage — offline slots stay separate.
+  // S.realm is set by net.ts when a realm character is selected (avoids an import cycle).
+  if (S.realm) { if (!quiet) toast('Realm character is saved server-side.', 'info'); return false; }
   try { const d = snapshot(); localStorage.setItem(KEY(slot), JSON.stringify({ v: SAVE_VERSION, ts: Date.now(), summary: { name: S.p.name, cls: S.p.cls, level: S.p.level, day: S.world.day, gold: S.p.gold }, d })); if (!quiet) { toast(`Game saved (${slot === 'auto' ? 'autosave' : 'slot ' + slot}).`, 'info'); audio.sfx('confirm'); } return true; }
   catch (e) { toast('Save failed: storage unavailable.', 'error'); return false; }
 }
@@ -221,6 +283,7 @@ export function loadGame(slot = 'auto') {
   const d = j.d; resetWorldState(); // migration: merge with defaults
   S.p = d.p; S.p.look = { ...defaultLook(), ...S.p.look }; S.p.mounts ||= ['horse']; S.p.mount ||= 'horse'; S.p.hotbar ||= [S.p.abilities?.[0] || null, S.p.abilities?.[1] || null, null, null, null];
   while (S.p.hotbar.length < 5) S.p.hotbar.push(null);
+  S.p.buffs ||= {};
   S.p.prof = { ...Object.fromEntries(Object.keys(PROFS).map((k) => [k, { lvl: 1, xp: 0 }])), ...(S.p.prof || {}) }; S.p.mastery ||= { melee: 0, ranged: 0, magic: 0 };
   S.rep = { ...S.rep, ...d.rep }; S.quests = d.quests || {}; S.flags = d.flags || {}; S.comp = d.comp || {}; S.houses = d.houses || {}; S.farm = d.farm || {}; S.world = { ...S.world, ...d.world }; S.discovered = d.discovered || {}; S.lore = d.lore || {}; S.ui.tracked = d.tracked || null;
   return true;

@@ -108,10 +108,180 @@ export function buildInterior(type: string, o: any = {}): Interior {
       items.push({ kind: 'exit', x: 0, z: 34.5, label: 'Return through the Hollow Door' }); enemies.push({ type: 'rift_warden', x: 0, z: -12 }, { type: 'wraith', x: -10, z: 4 }, { type: 'wraith', x: 10, z: 4 }, { type: 'rift_hound', x: -16, z: -6 }, { type: 'rift_hound', x: 16, z: -6 });
       items.push({ kind: 'chest', x: -20, z: -20, y: 0.5, label: 'Open void chest', data: { id: 'rift_chest', tier: 4 } }); put('chest', -20, -21, 0);
       update = (dt: number, t: number) => { rocks.forEach((r, i) => { r.position.y += Math.sin(t * 0.5 + i) * dt * 0.8; r.rotation.y += dt * 0.1; }); crystals.forEach((c, i) => { (c.material as any).emissiveIntensity = 1 + Math.sin(t * 2 + i) * 0.4; }); rune.rotation.z += dt * 0.3; (rune.material as any).opacity = 0.6 + Math.sin(t * 2) * 0.2; }; break; }
+    case 'crypt': {
+      mood = 'cave'; dark = true; ambient.cave = 1; ambient.fire = 0.2; w = 40; d = 76;
+      const rects = [[-5, 20, 5, 38], [-15, 2, 15, 20], [-4, -14, 4, 2], [-16, -40, 16, -14]];
+      const inR = (x: number, z: number, m = 0) => rects.some(([a, b, c, e]) => x > a + m && x < c - m && z > b + m && z < e - m);
+      walk = (x, z) => inR(x, z, 0.5); ground = () => 0;
+      rects.forEach(([a, b, c, e]) => {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(c - a, e - b), new THREE.MeshStandardMaterial({ color: '#2a2624', roughness: 0.95 }));
+        f.rotation.x = -Math.PI / 2; f.position.set((a + c) / 2, 0.01, (b + e) / 2); f.receiveShadow = true; g.add(f);
+      });
+      const rm = new THREE.MeshStandardMaterial({ color: '#383430', roughness: 1, flatShading: true });
+      const rr = (() => { let s = 17; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+      rects.forEach(([a, b, c, e]) => {
+        const pts: number[][] = []; for (let x = a; x <= c; x += 2.6) pts.push([x, b - 1.2], [x, e + 1.2]);
+        for (let z = b; z <= e; z += 2.6) pts.push([a - 1.2, z], [c + 1.2, z]);
+        pts.forEach(([x, z]) => {
+          if (inR(x, z, -0.3)) return; const h = 5 + rr() * 4;
+          const m = new THREE.Mesh(BOX, rm); m.scale.set(3 + rr() * 1.5, h, 3 + rr() * 1.5);
+          m.position.set(x, h / 2 - 0.5, z); m.rotation.y = rr() * 3; m.castShadow = true; g.add(m);
+        });
+      });
+      [[-8, 10], [8, 10], [-10, -22], [10, -22], [0, -32]].forEach(([x, z]) => {
+        bx(g, 1.8, 0.9, 3.2, '#504a44', x, 0.45, z);
+        bx(g, 2.0, 0.25, 3.4, '#655e56', x, 1.0, z);
+        blockers.push({ x0: x - 1.1, z0: z - 1.8, x1: x + 1.1, z1: z + 1.8 });
+      });
+      [[0, 32], [-8, 16], [8, 16], [0, -6], [-10, -30], [10, -30]].forEach(([x, z]) => {
+        cy(g, 0.12, 1.6, '#3a2a1a', x, 0.8, z);
+        bx(g, 0.3, 0.3, 0.3, '#4080ff', x, 1.7, z, new THREE.MeshStandardMaterial({ color: '#4080ff', emissive: '#2060ff', emissiveIntensity: 2.2 }));
+        light(g, x, 2, z, '#4090ff', 1.8, 16, true, flick);
+      });
+      put('chest', 0, -34, 0);
+      items.push({ kind: 'chest', x: 0, z: -32.6, y: 0.5, label: 'Open Ancient Tomb Sarcophagus', data: { id: 'crypt_relic', tier: 4, extra: 'relic_voidheart' } });
+      put('chest', -12, 16, Math.PI / 2);
+      items.push({ kind: 'chest', x: -10.6, z: 16, y: 0.5, label: 'Open Crypt Offering Urn', data: { id: 'crypt_cache', tier: 2, extra: 'rejuvenation_draught' } });
+      const mOre = bx(g, 1.2, 1.1, 1.2, '#5a5a62', 12, 0.55, 6); mOre.rotation.y = 1;
+      items.push({ kind: 'ore', x: 12, z: 7.4, y: 0.6, label: 'Mine silver seam', data: { id: 'crypt_silver' } });
+      blockers.push({ x0: 11.3, z0: 5.3, x1: 12.7, z1: 6.7 });
+      [[-6, 12], [6, 12], [-8, -20], [8, -20]].forEach(([x, z]) => enemies.push({ type: 'skeleton', x, z }));
+      enemies.push({ type: 'crypt_specter', x: 0, z: -22 }, { type: 'crypt_specter', x: -6, z: -30 }, { type: 'gravewarden', x: 0, z: -28 });
+      items.push({ kind: 'exit', x: 0, z: 34, label: 'Leave Whispering Catacombs' }); break;
+    }
+    case 'sunken_temple': {
+      mood = 'coast'; dark = true; ambient.water = 0.8; ambient.cave = 0.5; w = 46; d = 76;
+      const rects = [[-5, 20, 5, 38], [-16, 2, 16, 20], [-4, -12, 4, 2], [-18, -40, 18, -12]];
+      const inR = (x: number, z: number, m = 0) => rects.some(([a, b, c, e]) => x > a + m && x < c - m && z > b + m && z < e - m);
+      walk = (x, z) => inR(x, z, 0.5); ground = () => 0;
+      rects.forEach(([a, b, c, e]) => {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(c - a, e - b), new THREE.MeshStandardMaterial({ color: '#1a3038', roughness: 0.3, metalness: 0.4 }));
+        f.rotation.x = -Math.PI / 2; f.position.set((a + c) / 2, 0.01, (b + e) / 2); f.receiveShadow = true; g.add(f);
+      });
+      const rm = new THREE.MeshStandardMaterial({ color: '#254048', roughness: 0.8, flatShading: true });
+      const rr = (() => { let s = 29; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+      rects.forEach(([a, b, c, e]) => {
+        const pts: number[][] = []; for (let x = a; x <= c; x += 2.6) pts.push([x, b - 1.2], [x, e + 1.2]);
+        for (let z = b; z <= e; z += 2.6) pts.push([a - 1.2, z], [c + 1.2, z]);
+        pts.forEach(([x, z]) => {
+          if (inR(x, z, -0.3)) return; const h = 5 + rr() * 4;
+          const m = new THREE.Mesh(BOX, rm); m.scale.set(3 + rr() * 1.5, h, 3 + rr() * 1.5);
+          m.position.set(x, h / 2 - 0.5, z); m.rotation.y = rr() * 3; m.castShadow = true; g.add(m);
+        });
+      });
+      [[-10, 10], [-10, 16], [10, 10], [10, 16], [-12, -20], [-12, -30], [12, -20], [12, -30]].forEach(([x, z]) => {
+        cy(g, 0.7, 6, '#3a5864', x, 3, z); blockers.push({ x0: x - 0.8, z0: z - 0.8, x1: x + 0.8, z1: z + 0.8 });
+      });
+      [[0, 32], [-10, 12], [10, 12], [0, -4], [-12, -26], [12, -26], [0, -36]].forEach(([x, z]) => {
+        bx(g, 0.6, 0.6, 0.6, '#38e8d8', x, 0.3, z, new THREE.MeshStandardMaterial({ color: '#38e8d8', emissive: '#20c0b0', emissiveIntensity: 2.2 }));
+        light(g, x, 2, z, '#38f0d8', 1.8, 18, true, flick);
+      });
+      bx(g, 8, 0.6, 8, '#2a4852', 0, 0.3, -32);
+      put('chest', 0, -34, 0);
+      items.push({ kind: 'chest', x: 0, z: -32.6, y: 0.6, label: 'Claim Sunken Dawn Relic', data: { id: 'sunken_temple_relic', tier: 4, extra: 'relic_sunken' } });
+      put('chest', 12, 12, -Math.PI / 2);
+      items.push({ kind: 'chest', x: 10.6, z: 12, y: 0.5, label: 'Open Smuggler Stash', data: { id: 'sunken_temple_smuggler', tier: 2, extra: 'sunken_relic' } });
+      [[-6, 12], [6, 12]].forEach(([x, z]) => enemies.push({ type: 'smuggler', x, z }));
+      [[-8, -20], [8, -20], [0, -18]].forEach(([x, z]) => enemies.push({ type: 'void_cultist', x, z }));
+      enemies.push({ type: 'cultist_reaver', x: -6, z: -30 }, { type: 'cultist_reaver', x: 6, z: -30 }, { type: 'aether_golem', x: 0, z: -28 });
+      items.push({ kind: 'exit', x: 0, z: 34, label: 'Ascend to Coastal Shallows' }); break;
+    }
+    case 'fortress_undercroft': {
+      mood = 'ruin'; dark = true; ambient.fire = 0.8; ambient.cave = 0.3; w = 44; d = 72;
+      const rects = [[-5, 18, 5, 35], [-15, 2, 15, 18], [-4, -12, 4, 2], [-16, -38, 16, -12]];
+      const inR = (x: number, z: number, m = 0) => rects.some(([a, b, c, e]) => x > a + m && x < c - m && z > b + m && z < e - m);
+      walk = (x, z) => inR(x, z, 0.5); ground = () => 0;
+      rects.forEach(([a, b, c, e]) => {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(c - a, e - b), new THREE.MeshStandardMaterial({ color: '#38322c', roughness: 0.9 }));
+        f.rotation.x = -Math.PI / 2; f.position.set((a + c) / 2, 0.01, (b + e) / 2); f.receiveShadow = true; g.add(f);
+      });
+      const rm = new THREE.MeshStandardMaterial({ color: '#443c34', roughness: 1, flatShading: true });
+      const rr = (() => { let s = 43; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+      rects.forEach(([a, b, c, e]) => {
+        const pts: number[][] = []; for (let x = a; x <= c; x += 2.6) pts.push([x, b - 1.2], [x, e + 1.2]);
+        for (let z = b; z <= e; z += 2.6) pts.push([a - 1.2, z], [c + 1.2, z]);
+        pts.forEach(([x, z]) => {
+          if (inR(x, z, -0.3)) return; const h = 5 + rr() * 4;
+          const m = new THREE.Mesh(BOX, rm); m.scale.set(3 + rr() * 1.5, h, 3 + rr() * 1.5);
+          m.position.set(x, h / 2 - 0.5, z); m.rotation.y = rr() * 3; m.castShadow = true; g.add(m);
+        });
+      });
+      for (let i = 0; i < 6; i++) {
+        bx(g, 0.1, 4.5, 0.1, '#2a2624', -10, 2.25, 6 + i * 1.4);
+        bx(g, 0.1, 4.5, 0.1, '#2a2624', 10, 2.25, 6 + i * 1.4);
+      }
+      blockers.push({ x0: -10.5, z0: 5.5, x1: -9.5, z1: 14.5 }, { x0: 9.5, z0: 5.5, x1: 10.5, z1: 14.5 });
+      put('anvil', -10, -25, 0);
+      items.push({ kind: 'station', x: -10, z: -23.7, label: 'Use undercroft smithy', data: { st: 'smithy' } });
+      [[0, 30], [-8, 12], [8, 12], [0, -4], [-12, -28], [12, -28], [0, -34]].forEach(([x, z]) => {
+        cy(g, 0.4, 0.8, '#2a221b', x, 0.4, z);
+        bx(g, 0.5, 0.3, 0.5, '#ff8a20', x, 0.9, z, new THREE.MeshStandardMaterial({ color: '#ff8a20', emissive: '#ff5a10', emissiveIntensity: 2.2 }));
+        light(g, x, 2, z, '#ff8a24', 2.0, 18, true, flick);
+      });
+      put('chest', 0, -32, 0);
+      items.push({ kind: 'chest', x: 0, z: -30.6, y: 0.5, label: 'Unlock Bastion Armory Relic', data: { id: 'undercroft_relic', tier: 4, extra: 'relic_mountain' } });
+      put('chest', 10, -26, -Math.PI / 2);
+      items.push({ kind: 'chest', x: 8.6, z: -26, y: 0.5, label: 'Open Garrison Cache', data: { id: 'undercroft_cache', tier: 2, extra: 'spiced_cider' } });
+      const mOre2 = bx(g, 1.2, 1.1, 1.2, '#5a5a62', -12, 0.55, -16); mOre2.rotation.y = 2;
+      items.push({ kind: 'ore', x: -12, z: -14.6, y: 0.6, label: 'Mine deep iron vein', data: { id: 'undercroft_iron' } });
+      blockers.push({ x0: -12.7, z0: -16.7, x1: -11.3, z1: -15.3 });
+      [[-6, 10], [6, 10]].forEach(([x, z]) => enemies.push({ type: 'deserter', x, z }));
+      [[-8, 4], [8, 4]].forEach(([x, z]) => enemies.push({ type: 'bandit_archer', x, z }));
+      enemies.push({ type: 'ashen_reaver', x: -6, z: -20 }, { type: 'ashen_reaver', x: 6, z: -20 }, { type: 'karreth', x: 0, z: -24 });
+      items.push({ kind: 'exit', x: 0, z: 31, label: 'Ascend to Fort Courtyard' }); break;
+    }
+    case 'grotto': {
+      mood = 'cave'; dark = true; ambient.cave = 1; ambient.water = 0.6; w = 48; d = 82;
+      const rects = [[-5, 22, 5, 40], [-18, 2, 18, 22], [-4, -14, 4, 2], [-18, -42, 18, -14]];
+      const inR = (x: number, z: number, m = 0) => rects.some(([a, b, c, e]) => x > a + m && x < c - m && z > b + m && z < e - m);
+      walk = (x, z) => inR(x, z, 0.5); ground = () => 0;
+      rects.forEach(([a, b, c, e]) => {
+        const f = new THREE.Mesh(new THREE.PlaneGeometry(c - a, e - b), new THREE.MeshStandardMaterial({ color: '#1a2824', roughness: 0.7 }));
+        f.rotation.x = -Math.PI / 2; f.position.set((a + c) / 2, 0.01, (b + e) / 2); f.receiveShadow = true; g.add(f);
+      });
+      const rm = new THREE.MeshStandardMaterial({ color: '#243830', roughness: 1, flatShading: true });
+      const rr = (() => { let s = 61; return () => { s = (s * 16807) % 2147483647; return s / 2147483647; }; })();
+      rects.forEach(([a, b, c, e]) => {
+        const pts: number[][] = []; for (let x = a; x <= c; x += 2.6) pts.push([x, b - 1.2], [x, e + 1.2]);
+        for (let z = b; z <= e; z += 2.6) pts.push([a - 1.2, z], [c + 1.2, z]);
+        pts.forEach(([x, z]) => {
+          if (inR(x, z, -0.3)) return; const h = 5 + rr() * 4;
+          const m = new THREE.Mesh(BOX, rm); m.scale.set(3 + rr() * 1.5, h, 3 + rr() * 1.5);
+          m.position.set(x, h / 2 - 0.5, z); m.rotation.y = rr() * 3; m.castShadow = true; g.add(m);
+        });
+      });
+      [[-10, 14], [10, 14], [-12, -22], [12, -22], [0, -32]].forEach(([x, z], i) => {
+        const col = i % 2 === 0 ? '#4aff90' : '#bb66ff';
+        const cr = new THREE.Mesh(new THREE.ConeGeometry(0.8, 3.5, 6), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 1.4 }));
+        cr.position.set(x, 1.75, z); cr.rotation.z = (i % 3 - 1) * 0.15; g.add(cr);
+        blockers.push({ x0: x - 0.9, z0: z - 0.9, x1: x + 0.9, z1: z + 0.9 });
+      });
+      [[0, 34], [-10, 12], [10, 12], [0, -4], [-12, -28], [12, -28], [0, -36]].forEach(([x, z], i) => {
+        const col = i % 2 === 0 ? '#50ff90' : '#b06aff'; light(g, x, 2, z, col, 1.8, 18, true, flick);
+      });
+      put('alchemy', -12, 10, 0);
+      items.push({ kind: 'station', x: -12, z: 11.2, label: 'Use natural aether alembic', data: { st: 'alchemy' } });
+      const sapphire = bx(g, 1.2, 1.1, 1.2, '#3a5070', -14, 0.55, -20); sapphire.rotation.y = 1;
+      bx(sapphire, 0.5, 0.4, 0.5, '#40a0ff', 0.2, 0.4, 0.3, new THREE.MeshStandardMaterial({ color: '#40a0ff', emissive: '#2060ff', emissiveIntensity: 1.2 }));
+      items.push({ kind: 'ore', x: -14, z: -18.6, y: 0.6, label: 'Mine sapphire cluster', data: { id: 'grotto_sapphire' } });
+      blockers.push({ x0: -14.7, z0: -20.7, x1: -13.3, z1: -19.3 });
+      const emerald = bx(g, 1.2, 1.1, 1.2, '#305040', 14, 0.55, -20); emerald.rotation.y = 2;
+      bx(emerald, 0.5, 0.4, 0.5, '#40ff80', 0.2, 0.4, 0.3, new THREE.MeshStandardMaterial({ color: '#40ff80', emissive: '#20e060', emissiveIntensity: 1.2 }));
+      items.push({ kind: 'ore', x: 14, z: -18.6, y: 0.6, label: 'Mine emerald cluster', data: { id: 'grotto_emerald' } });
+      blockers.push({ x0: 13.3, z0: -20.7, x1: 14.7, z1: -19.3 });
+      put('chest', 0, -36, 0);
+      items.push({ kind: 'chest', x: 0, z: -34.6, y: 0.5, label: 'Open Heart of Tempest Chest', data: { id: 'grotto_relic', tier: 4, extra: 'relic_tempest' } });
+      [[-8, 14], [8, 14]].forEach(([x, z]) => enemies.push({ type: 'rift_hound', x, z }));
+      enemies.push({ type: 'bear_alpha', x: 0, z: 8 });
+      [[-10, -28], [10, -28]].forEach(([x, z]) => enemies.push({ type: 'wraith', x, z }));
+      enemies.push({ type: 'white_wolf', x: 0, z: -26 });
+      items.push({ kind: 'exit', x: 0, z: 36, label: 'Ascend to Veilfall' }); break;
+    }
   }
-  if (type !== 'cave' && type !== 'rift') { exit(d); for (let x = 0; x < 3; x++) void x; }
+  const isDungeon = ['cave', 'rift', 'crypt', 'sunken_temple', 'fortress_undercroft', 'grotto'].includes(type);
+  if (!isDungeon) { exit(d); for (let x = 0; x < 3; x++) void x; }
   const wlk = walk || ((x: number, z: number) => Math.abs(x) < w / 2 - 0.5 && Math.abs(z) < d / 2 - 0.5);
-  const spawn = type === 'cave' ? { x: 0, z: 38 } : type === 'rift' ? { x: 0, z: 30 } : { x: 0, z: d / 2 - 2.6 };
+  const spawn = type === 'cave' ? { x: 0, z: 38 } : type === 'rift' ? { x: 0, z: 30 } : type === 'crypt' ? { x: 0, z: 32 } : type === 'sunken_temple' ? { x: 0, z: 32 } : type === 'fortress_undercroft' ? { x: 0, z: 30 } : type === 'grotto' ? { x: 0, z: 34 } : { x: 0, z: d / 2 - 2.6 };
   return { group: g, w, d, walk: wlk, blockers, items, ground, spawn, exit: spawn, npcs, enemies, flick, mood, dark, rift, update, ambient, meshes };
 }
 void shade; void FURNITURE;

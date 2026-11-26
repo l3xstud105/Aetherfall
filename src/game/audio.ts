@@ -110,6 +110,7 @@ class AudioEngine {
       case 'hit': this.noise(0.12, 'lowpass', 1500, 0.22, 200, 1); T(120, 0.14, 'square', 0.1, -70); break;
       case 'hurt': T(220, 0.2, 'sawtooth', 0.1, -120); this.noise(0.1, 'lowpass', 900, 0.14); break;
       case 'block': this.noise(0.1, 'bandpass', 2600, 0.2, 1200, 4); T(900, 0.12, 'square', 0.05, -400); break;
+      case 'parry': this.noise(0.14, 'highpass', 4500, 0.28, 1200, 4); T(1400, 0.22, 'triangle', 0.16, -200); T(2200, 0.35, 'sine', 0.12, 0, 0.02, 0.4); break;
       case 'bow': T(180, 0.12, 'triangle', 0.1, 200); this.noise(0.15, 'highpass', 3000, 0.08, 1500); break;
       case 'jump': this.noise(0.1, 'bandpass', 500, 0.05, 900); break;
       case 'land': this.noise(0.16, 'lowpass', 400, 0.18 * p, 100); break;
@@ -125,6 +126,11 @@ class AudioEngine {
       case 'spell_holy': [523, 784, 1047].forEach((f, i) => T(f, 0.6, 'triangle', 0.08, 0, i * 0.05, 0.9)); this.noise(0.3, 'highpass', 3500, 0.05); break;
       case 'spell_aether': T(140, 0.8, 'sawtooth', 0.08, 700, 0, 0.8); T(700, 0.6, 'sine', 0.07, -600, 0.2, 0.9); break;
       case 'spell_phys': this.noise(0.2, 'bandpass', 800, 0.14, 300, 1.5); break;
+      case 'reaction_conflagration': this.noise(0.65, 'lowpass', 1400, 0.35, 120, 0.8); T(180, 0.5, 'sawtooth', 0.14, -80); T(440, 0.3, 'triangle', 0.1, 200, 0.05); break;
+      case 'reaction_superconductor': this.noise(0.3, 'highpass', 5000, 0.25, 1800, 0.5); T(2400, 0.35, 'sine', 0.12, -1200, 0, 0.5); T(120, 0.3, 'sawtooth', 0.12, 500); break;
+      case 'reaction_vaporize': this.noise(0.55, 'bandpass', 2200, 0.28, 1400, 1.8); T(600, 0.25, 'triangle', 0.09, -300); break;
+      case 'reaction_electro': this.noise(0.35, 'highpass', 3500, 0.24, 2500, 0.6); T(150, 0.35, 'sawtooth', 0.12, 450); T(1800, 0.15, 'square', 0.08, -900, 0.04); break;
+      case 'reaction_magma': this.noise(0.7, 'lowpass', 600, 0.38, 50, 0.7); T(95, 0.6, 'sawtooth', 0.18, -45); T(260, 0.4, 'triangle', 0.1, 150, 0.1); break;
       case 'explode': this.noise(0.6, 'lowpass', 1200, 0.35, 60, 0.8); T(70, 0.5, 'sawtooth', 0.15, -40); break;
       case 'whinny': { T(500, 0.35, 'sawtooth', 0.07, 700); T(1100, 0.3, 'triangle', 0.04, -500, 0.12); break; }
       case 'growl': T(80, 0.5, 'sawtooth', 0.12, -20); this.noise(0.4, 'lowpass', 400, 0.1); break;

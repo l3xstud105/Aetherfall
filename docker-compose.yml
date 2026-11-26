@@ -1,0 +1,16 @@
+services:
+  aetherfall-realm:
+    build: .
+    container_name: aetherfall-realm
+    restart: unless-stopped
+    ports:
+      - "7777:7777"
+    environment:
+      - NODE_ENV=production
+      - PORT=7777
+      - DB_PATH=/data/aetherfall_realm.db
+    volumes:
+      - aetherfall_data:/data
+
+volumes:
+  aetherfall_data:

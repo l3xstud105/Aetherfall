@@ -161,7 +161,7 @@ G.hurtPlayer = (dmg: number, src: any, unblockable = false) => {
     if (facingSrc) {
       if (P.blockTimer && P.blockTimer < 0.28) {
         parried = true; v = 0; P.counterBuff = 1.6;
-        audio.sfx('unlock'); emit('spark', P.pos.x, P.pos.y + 1.2, P.pos.z, '#ffe27a', 28, 6, 0.6, 6);
+        audio.sfx('parry'); emit('spark', P.pos.x, P.pos.y + 1.2, P.pos.z, '#ffe27a', 28, 6, 0.6, 6);
         floatText('PARRY!', V3(P.pos.x, P.pos.y + 2.4, P.pos.z), '#ffe27a', true);
         rumble(0.4, 100);
         if (src && !src.dead) {
@@ -354,12 +354,19 @@ function enterInterior(type: string, o: any) {
   intNpcs = spawnInteriorNpcs(interior, interior.group, extraNpcs); intFoes = spawnInteriorFoes(interior, interior.group); intFoes.forEach((f: any) => { if (S.flags['dead_' + f.type]) removeFoe(f); }); intFoes = intFoes.filter((f) => G.enemies.includes(f));
   if (type === 'home') { homeGroup = new THREE.Group(); interior.group.add(homeGroup); homeBase = interior.blockers.length; refreshHome(); }
   const sp = interior.spawn; P.pos.set(sp.x, INT_Y + interior.ground(sp.x, sp.z) + 0.05, sp.z); P.vel.set(0, 0, 0); P.visYaw = Math.PI; P.yaw = Math.PI; G.cam.yaw = 0; G.cam.pitch = 0.5; syncCompanions(); companions.forEach((c) => c.pos.set(P.pos.x + 1.5, P.pos.y, P.pos.z + 0.5));
-  audio.setMood(({ tavern: 'village', smith: 'village', shop: 'village', alch: 'village', library: 'story', hall: 'story', home: 'village', cave: 'cave', rift: 'rift' } as any)[type] || 'village'); applyGraphics(); if (type === 'cave') hint('cave', 'Three runes glow in the first chamber. Touch them all to open the hidden vault.');
+  audio.setMood(({ tavern: 'village', smith: 'village', shop: 'village', alch: 'village', library: 'story', hall: 'story', home: 'village', cave: 'cave', rift: 'rift', crypt: 'cave', sunken_temple: 'coast', fortress_undercroft: 'ruin', grotto: 'cave' } as any)[type] || 'village'); applyGraphics();
+  if (type === 'cave') hint('cave', 'Three runes glow in the first chamber. Touch them all to open the hidden vault.');
+  if (type === 'crypt') hint('crypt', 'Whispering Catacombs: Ancient tombs of the fallen. Beware spectral guardians.');
+  if (type === 'sunken_temple') hint('sunken_temple', 'Sunken Aether Temple: Flooded chambers filled with volatile void magic.');
+  if (type === 'fortress_undercroft') hint('fortress_undercroft', 'Bastion Undercroft: Fort Cinderwatch subterranean garrison and armory.');
+  if (type === 'grotto') hint('grotto', 'Luminescent Grotto: Subterranean caverns glowing with aether flora.');
+  net.sendDungeon(P.insideKey, type.replace(/_/g, ' '));
 }
 function leaveInterior(silent = false) {
   const P = G.player; if (!P.inside) return; if (!silent) { fade(); audio.sfx('door'); } const type = interior ? [...[]].length : 0; void type;
   intFoes.forEach((f) => removeFoe(f)); intFoes = []; intNpcs = []; G.intGroup.clear(); G.intGroup.visible = false; G.world.visible = true; interior = null; homeGroup = null; homeItems = []; houseId = null; P.inside = null; P.insideKey = null; G.projectiles.forEach((p: any) => G.scene.remove(p.m)); G.projectiles.length = 0;
   const r = P.ret || V3(-150, 0, 100); P.pos.set(r.x, groundFull(r.x, r.z, 99) + 0.1, r.z); P.vel.set(0, 0, 0); P.sit = null; if (P.rig.group.parent !== G.world) G.world.add(P.rig.group); syncCompanions(); companions.forEach((c) => c.pos.set(P.pos.x + 1.5, P.pos.y, P.pos.z + 1)); applyGraphics(); G.cam.yaw = Math.atan2(-(P.pos.x - (P.ret?.x ?? 0)), 1) + Math.PI;
+  net.sendDungeon('world', 'the overworld');
 }
 function refreshHome() {
   if (!interior || !homeGroup || !houseId) return; const hs = houseState(houseId); homeGroup.clear(); interior.blockers.length = homeBase; homeItems = [];

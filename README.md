@@ -1,10 +1,122 @@
-# AETHERFALL 0.9 — A Tale of Broken Skies
-**L3X STUD105** · browser-first 3D third-person open-world fantasy RPG (Three.js + React + WebAudio + PeerJS)
+# AETHERFALL 1.0.0 — One World. One Realm. Every Player.
+**L3X STUD105** · Browser-first 3D third-person open-world persistent MMORPG (Three.js WebGL 2.0 + React 19 + Node.js Authoritative WebSocket Server + Native SQLite WAL).
 
-Play: `npm install && npm run build`, then open `dist/index.html` (single self-contained file). Dev: `npm run dev`.
+Play in browser: `npm install && npm run build`, then open `dist/index.html` or run `npm run dev`.  
+Dedicated Global Realm Server: `npm run server` (listens on `0.0.0.0:7777`).
 
 ---
-## 🌟 What's New in Version 0.9
+
+## 🌐 Global MMORPG Transformation (Milestones 1–5)
+
+AETHERFALL 1.0.0 transforms the game into a persistent, authoritative single-realm MMORPG where every player connects to the same persistent game universe.
+
+### Key MMORPG Features:
+1. **One Global Realm (`server/`):**
+   - Authoritative dedicated Node.js WebSocket backend running on port 7777.
+   - Native SQLite `DatabaseSync` persistence configured with Write-Ahead Logging (`WAL`), foreign keys, and atomic transactions.
+   - Persistent player accounts, character creation/selection, inventory, gold, equipment, guilds, friendships, and audit trade logs.
+   - 20Hz world simulation loop with 64m × 64m spatial grid partitioning for optimized bandwidth and anti-cheat protection.
+2. **Server-Authoritative Gameplay:**
+   - Authoritative movement validation, delta checking, and speedhack teleport rejection.
+   - Server-validated reach, resource expenditure, and directional poise stagger.
+   - Authoritative 5-Element Reaction Matrix: Conflagration, Superconductor, Vaporize 2×, Electro-Discharge, Magma Eruption.
+   - Multi-phase boss mechanics with Phase II Enrage transitions at ≤50% HP.
+   - Server-side loot, experience, and currency drops persisted directly to player DB profiles.
+3. **Comprehensive Social & Economic Systems:**
+   - Multi-channel chat (`world`, `local`, `party`, `guild`, `whisper`) with rate limits and profanity filtering.
+   - Persistent Friends list with real-time online status and direct whisper/party shortcuts.
+   - Full Party system (up to 4 players) with synchronized member vitals in the HUD.
+   - Player Inspection modal viewing equipped gear, stats, and guild affiliation.
+   - Guild system with hierarchy management (`leader`, `officer`, `member`).
+   - Secure Two-Phase Player Trading (Negotiate → Lock → Confirm) with zero item duplication risk.
+4. **Living Persistent World & World Events:**
+   - Synchronized day/night clock, dynamic weather patterns, and NPC schedules.
+   - Dynamic World Events: *Bandit Siege on Ashenvale Outpost*, *Royal Caravan Ambush*, *Void Incursion at Hollow Rift*, and *Ancient Storm Warden Kharun Awakens*.
+   - World event contribution tracking awarding bonus gold, XP, and relics to defenders.
+   - Persistent settlement rebuilding: server-wide resource donation advancing Ashenvale Outpost through rebuilding tiers.
+5. **Player Marketplace & Persistent Housing:**
+   - In-game Player Marketplace / Auction House: list items from bag, search listings by name, buy items with atomic gold/item escrow, and cancel listings.
+   - Persistent housing saving furniture layouts, storage chests, and crafting stations to database.
+6. **Cooperative LFG Matchmaking & Dungeon Instances:**
+   - Dungeon queue tool pairing players for cooperative runs in Whispering Catacombs, Sunken Aether Temple, Bastion Undercroft, Luminescent Grotto, and Hollow Rift.
+7. **100% Offline Single-Player Preserved:**
+   - Complete offline single-player campaign remains fully playable without an internet connection or server dependency.
+
+---
+
+## 🚀 Quick Start Guide
+
+### 1. Run Development Client
+```bash
+npm install
+npm run dev
+```
+Client runs at `http://localhost:5173/`.
+
+### 2. Launch Authoritative Global Realm Server
+```bash
+npm run server
+```
+Server starts on `0.0.0.0:7777` with native SQLite database (`aetherfall_realm.db`).
+
+### 3. Connect Multiple Players
+- Open two browser tabs at `http://localhost:5173/`.
+- In each tab, click **🌐 Enter Global Realm (MMO)**.
+- Enter distinct character names (e.g., `Thorin` and `Aria`).
+- Both players will spawn into the shared world, see each other move in real-time, chat across channels, form parties, trade, and tackle dungeons together.
+
+### 4. Run Automated Test Suite
+```bash
+bash tests/run.sh
+```
+Executes all 8 headless test suites (900+ assertions) covering logic, world physics, UI, gameplay loop, P2P fallback, authoritative server, milestones 1–5, and staged load testing.
+
+---
+
+## 🛠️ Production Deployment
+
+For Docker, systemd, Nginx reverse proxy with WSS, SSL/TLS, and automated database backups, refer to **`docs/DEPLOYMENT.md`**.
+
+```bash
+# Launch with Docker Compose
+docker compose up -d --build
+```
+
+---
+## 🌟 What's New in Version 1.0
+
+* **4 Complete Underground Dungeons:**
+  - **Whispering Catacombs (`crypt`):** Subterranean tomb complex beneath the Ruined Chapel (`95, -30`) filled with sarcophagi, soul torches, silver ore veins, crypt specters, and the legendary **Voidheart Talisman** (`relic_voidheart`).
+  - **Sunken Aether Temple (`sunken_temple`):** Flooded coastal sanctuary beneath the Sunken Veil (`210, 10`) featuring ancient pillars, bioluminescent water reflections, void reavers, and the legendary **Sunken Dawn Relic** (`relic_sunken`).
+  - **Bastion Undercroft (`fortress_undercroft`):** Underground garrison and armory beneath Fort Cinderwatch (`-10, 205`) with iron-barred dungeons, active forge, deserter knights, and the legendary **Heart of the Mountain** (`relic_mountain`).
+  - **Luminescent Grotto (`grotto`):** Cavernous fungal sanctuary behind Veilfall Cascade (`60, -150`) with glowing bioluminescent mushrooms, sapphire and emerald crystal clusters, and the legendary **Tempest Conduit** (`relic_tempest`).
+
+* **Elemental Reaction Matrix:**
+  - Dynamic elemental status interactions with procedural audio synthesis and unique VFX:
+    - **Conflagration (Fire + Wind):** Combustive AoE fire explosion dealing +60% bonus damage and staggering surrounding foes.
+    - **Superconductor (Ice + Lightning):** Cryo-electric shattering blast dealing +50% damage and instantly breaking enemy guard for 2.5s.
+    - **Vaporize (Fire + Water/Ice):** High-temperature steam blast delivering a massive **2.0×** damage multiplier.
+    - **Electro-Discharge (Lightning + Water):** High-voltage surge chaining lightning arcs to all nearby enemies within 7 meters.
+    - **Magma Eruption (Fire + Earth):** Volcanic molten slag eruption breaking armor poise (+50) and dealing +65% bonus damage.
+  - Dynamic wet state: foes swimming, standing in water, or caught in rainstorms naturally trigger water-element reactions.
+
+* **Multi-Phase Boss Battles:**
+  - Bosses (**Karreth the Hollow**, **The Gravewarden**, **The Rift Warden**, **The Aether Colossus**) enter **Phase II: Enraged** at `< 50% HP`.
+  - Phase II features immediate stagger recovery, enraged battle barks, crimson aura bursts, 35% faster attack cadence, and expanded multi-directional shockwaves.
+
+* **Living World Simulation & Ashenvale Outpost Rebuilding:**
+  - Dynamic survivor structures at the Ashenvale ruins plaza with timber stacks, carpenter workbenches, lanterns, and survivor tents.
+  - New merchants & quest givers:
+    - **Kaelen the Quartermaster:** Provisions, enchanted timber, and smithing stock at the Ashenvale rebuild outpost.
+    - **Rodrik the Caravaner:** Wandering merchant selling precious gemstones (Sapphire, Topaz, Emerald), treasure maps, and rare draughts.
+  - **Companion Loyalty Perks:** Active companions grant escalating stat benefits based on loyalty tier (Lyra: ranged & speed; Brann: health & defense; Iselle: mana & healing regen; Kestrel: stamina & crit; Corvin: spellblade attack & life steal).
+  - **Consumable Food & Potion Buffs:** Consuming apple cider, rejuvenation draughts, and hearty meals activates lingering vitality, warmth, rage, and stoneskin buffs.
+
+* **Timed Perfect Parry:**
+  - Timed 0.22s block reflects 100% incoming damage, inflicts full stagger break on the attacker, triggers procedural metallic parry chime audio (`audio.sfx('parry')`), and grants a +60% counterattack buff.
+
+---
+## 🌟 Features Established in Version 0.9
 
 * **5-Element Magic & Expanded Ability System:**
   - Fire (*Flame Slash* - sweeping fire arc + burn damage over time)
@@ -44,7 +156,7 @@ Play: `npm install && npm run build`, then open `dist/index.html` (single self-c
 * **Dedicated Game Website & Desktop Distribution:**
   - **Full Game Website Portal:** Includes Hero showcase, live in-browser playable viewport with fullscreen immersion, 5-element magic deep-dive, interactive 10-class codex, Valdoria world lore, controls guide, and release notes.
   - **Standalone Windows Executable (`Aetherfall.exe`):** Genuine 64-bit Windows PE GUI executable with embedded self-extracting game payload. Runs 100% offline with zero dependencies in a borderless app window.
-  - **Desktop Distribution Package (`Aetherfall-v0.9-Windows.zip`):** Complete archive containing `Aetherfall.exe`, standalone `index.html`, Windows batch launcher (`Aetherfall-Launcher.bat`), and offline instructions.
+  - **Desktop Distribution Package (`Aetherfall-v1.0-Windows.zip`):** Complete archive containing `Aetherfall.exe`, standalone `index.html`, Windows batch launcher (`Aetherfall-Launcher.bat`), and offline instructions.
 
 ---
 ## Controls (all remappable in Settings → Controls)

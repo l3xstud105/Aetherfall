@@ -6,7 +6,7 @@ import { audio } from './game/audio';
 import { Codex } from './ui/Codex';
 import { Confirm, DeadScreen, Hud, PauseMenu } from './ui/Hud';
 import { Creator, Ending, Intro, MainMenu, Settings } from './ui/Menus';
-import { Dialogue, HouseEdit, HouseSale, Multiplayer, Shop, Stable, Storage } from './ui/Panels';
+import { Dialogue, HouseEdit, HouseSale, InspectModal, Multiplayer, Shop, Stable, Storage, TradeWindow } from './ui/Panels';
 import { TipHost } from './ui/ui';
 import { Website } from './ui/Website';
 
@@ -59,10 +59,12 @@ export default function App() {
         {sc === 'game' && ui.pause && <PauseMenu />}
         {sc === 'game' && ui.dead && <DeadScreen />}
         {ui.mp && <Multiplayer />}
+        {sc === 'game' && ui.trade && <TradeWindow />}
+        {sc === 'game' && ui.inspect && <InspectModal />}
         {sc === 'ending' && <Ending />}
         {ui.settings && <Settings />}
         <Confirm />
-        {ui.loading && <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 anim-fade" style={{ zIndex: 80, background: 'radial-gradient(ellipse at center, #1a1030, #04030a)' }}><div className="logo" style={{ fontSize: '3em' }}>AETHERFALL</div><div className="title">{ui.loading.text}</div><div className="bar" style={{ width: 360, height: 12 }}><i style={{ width: ui.loading.pct + '%', background: 'linear-gradient(90deg,#b8902a,#ffe27a)' }} /></div><div className="dim" style={{ maxWidth: 480, textAlign: 'center', fontSize: '0.9em' }}>{TIPS[Math.floor(ui.loading.pct / 17) % TIPS.length]}</div></div>}
+        {ui.loading && <div className="fixed inset-0 flex flex-col items-center justify-center gap-4 anim-fade" style={{ zIndex: 80, background: 'radial-gradient(ellipse at center, #1a1030, #04030a)' }}><div className="logo" style={{ fontSize: '3em' }}>AETHERFALL</div><div className="eyebrow" style={{ fontSize: '0.8em' }}>{ui.loading.text}</div><div className="bar" style={{ width: 380, height: 10, borderRadius: 999 }}><i style={{ width: ui.loading.pct + '%', background: 'linear-gradient(90deg,#b8902a,#ffe27a)' }} /></div><div className="divider-orn" style={{ width: 380 }}><span>✦ ✦ ✦</span></div><div className="dim" style={{ maxWidth: 480, textAlign: 'center', fontSize: '0.9em', fontStyle: 'italic' }}>{TIPS[Math.floor(ui.loading.pct / 17) % TIPS.length]}</div></div>}
         <TipHost />
       </div>
     </Website>

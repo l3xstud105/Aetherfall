@@ -21,10 +21,32 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5173,
     allowedHosts: true,
+    proxy: {
+      '/ws': {
+        target: 'ws://127.0.0.1:7777',
+        ws: true,
+        changeOrigin: true
+      },
+      '/health': {
+        target: 'http://127.0.0.1:7777',
+        changeOrigin: true
+      }
+    }
   },
   preview: {
     host: "0.0.0.0",
     port: 4173,
     allowedHosts: true,
+    proxy: {
+      '/ws': {
+        target: 'ws://127.0.0.1:7777',
+        ws: true,
+        changeOrigin: true
+      },
+      '/health': {
+        target: 'http://127.0.0.1:7777',
+        changeOrigin: true
+      }
+    }
   },
 });

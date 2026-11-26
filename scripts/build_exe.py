@@ -233,17 +233,19 @@ def build_standalone_exe(html_bytes, output_path):
 if __name__ == '__main__':
     with open('dist/index.html', 'rb') as f:
         html = f.read()
+    build_standalone_exe(html, 'public/Aetherfall-v1.0.exe')
+    build_standalone_exe(html, 'public/Aetherfall.exe')
     build_standalone_exe(html, 'public/Aetherfall-v0.9.exe')
 
 def build_distribution():
     # 1. Launcher .bat
     bat_content = """@echo off
-title Aetherfall 0.9 Launcher - L3X STUD105
+title Aetherfall 1.0 Launcher - L3X STUD105
 echo ====================================================
-echo        AETHERFALL 0.9 - A Tale of Broken Skies
+echo        AETHERFALL 1.0 - A Tale of Broken Skies
 echo                 L3X STUD105
 echo ====================================================
-echo Starting Aetherfall 0.9...
+echo Starting Aetherfall 1.0...
 
 :: Check if index.html exists
 if not exist "%~dp0index.html" (
@@ -269,13 +271,13 @@ exit /b 0
 
     # 2. README-DESKTOP.txt
     readme_content = """====================================================
-  AETHERFALL 0.9 - A Tale of Broken Skies
+  AETHERFALL 1.0 - A Tale of Broken Skies
   L3X STUD105 · 3D Open-World Fantasy Action RPG
 ====================================================
 
 OFFLINE PLAY INSTRUCTIONS:
 ----------------------------------------------------
-You can play Aetherfall 0.9 completely offline on any Windows PC!
+You can play Aetherfall 1.0 completely offline on any Windows PC!
 
 OPTION 1 (Recommended):
 Double-click "Aetherfall.exe".
@@ -348,22 +350,23 @@ Developed by L3X STUD105. All rights reserved.
     with open('public/README-DESKTOP.txt', 'w', encoding='utf-8') as f:
         f.write(readme_content)
 
-    # 3. Create ZIP package
-    zip_path = 'public/Aetherfall-v0.9-Windows.zip'
-    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-        zf.write('public/Aetherfall-v0.9.exe', arcname='Aetherfall.exe')
-        zf.write('dist/index.html', arcname='index.html')
-        zf.write('public/Aetherfall-Launcher.bat', arcname='Aetherfall-Launcher.bat')
-        zf.write('public/README-DESKTOP.txt', arcname='README-DESKTOP.txt')
-    print(f"Generated Windows bundle zip: {zip_path} ({os.path.getsize(zip_path):,} bytes)")
+    # 3. Create ZIP packages
+    for zip_name in ['public/Aetherfall-v1.0-Windows.zip', 'public/Aetherfall-v0.9-Windows.zip']:
+        with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.write('public/Aetherfall-v1.0.exe', arcname='Aetherfall.exe')
+            zf.write('dist/index.html', arcname='index.html')
+            zf.write('public/Aetherfall-Launcher.bat', arcname='Aetherfall-Launcher.bat')
+            zf.write('public/README-DESKTOP.txt', arcname='README-DESKTOP.txt')
+        print(f"Generated Windows bundle zip: {zip_name} ({os.path.getsize(zip_name):,} bytes)")
     with open('public/.nojekyll', 'w') as f:
         pass
     import shutil
     if os.path.exists('dist'):
-        shutil.copy('public/Aetherfall-v0.9.exe', 'dist/Aetherfall-v0.9.exe')
-        shutil.copy('public/Aetherfall-v0.9-Windows.zip', 'dist/Aetherfall-v0.9-Windows.zip')
-        shutil.copy('public/Aetherfall-Launcher.bat', 'dist/Aetherfall-Launcher.bat')
-        shutil.copy('public/README-DESKTOP.txt', 'dist/README-DESKTOP.txt')
+        for fn in ['Aetherfall-v1.0.exe', 'Aetherfall.exe', 'Aetherfall-v0.9.exe',
+                   'Aetherfall-v1.0-Windows.zip', 'Aetherfall-v0.9-Windows.zip',
+                   'Aetherfall-Launcher.bat', 'README-DESKTOP.txt']:
+            if os.path.exists(os.path.join('public', fn)):
+                shutil.copy(os.path.join('public', fn), os.path.join('dist', fn))
         shutil.copy('dist/index.html', 'dist/404.html')
         with open('dist/.nojekyll', 'w') as f:
             pass

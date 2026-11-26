@@ -4,6 +4,7 @@ import { S, useHud, emitUI, saveSettings } from '../game/store';
 import { audio } from '../game/audio';
 
 export const sfx = (n: string) => audio.sfx(n);
+
 export function Btn({ children, onClick, className = '', disabled, sel, title, quiet, ...r }: any) {
   return (
     <button {...r} title={title} disabled={disabled} className={`btn ${sel ? 'sel' : ''} ${className}`} onMouseEnter={() => !disabled && sfx('hover')} onClick={(e) => { if (disabled) return; if (!quiet) sfx('click'); onClick?.(e); }}>
@@ -11,18 +12,46 @@ export function Btn({ children, onClick, className = '', disabled, sel, title, q
     </button>
   );
 }
-export function Bar({ v, max, color, label }: { v: number; max: number; color: string; label?: string }) {
+
+export function Bar({ v, max, color, label, icon, xp }: { v: number; max: number; color: string; label?: string; icon?: ReactNode; xp?: boolean }) {
   const pct = Math.max(0, Math.min(100, (v / Math.max(1, max)) * 100));
-  return <div className="bar"><i style={{ width: pct + '%', background: color }} />{label !== undefined && <b>{label}</b>}</div>;
+  if (xp) return <div className="bar xp" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: pct + '%', background: color }} /></div>;
+  return (
+    <div className="flex items-center gap-1.5">
+      {icon !== undefined && <span className="vital-ic">{icon}</span>}
+      <div className="bar" style={{ flex: 1 }} role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100}><i style={{ width: pct + '%', background: color }} />{label !== undefined && <b>{label}</b>}</div>
+    </div>
+  );
 }
+
 export function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) { return <button role="switch" aria-checked={on} className={`toggle ${on ? 'on' : ''}`} onClick={() => { sfx('tab'); onChange(!on); }} onMouseEnter={() => sfx('hover')} />; }
 export function Slider({ v, min, max, step = 0.01, onChange, tick }: any) { return <input type="range" min={min} max={max} step={step} value={v} onChange={(e) => onChange(Number(e.target.value))} onMouseUp={() => sfx(tick || 'tap')} onKeyUp={() => sfx('tap')} />; }
-export function Window({ title, onClose, children, w = 'min(1100px, 96vw)', h = 'min(720px, 92vh)', icon }: any) {
+
+/* Empty state — consistent across inventory, lists, market, friends */
+export function Empty({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
+  return (
+    <div className="empty">
+      <div className="glyph-xl">{icon}</div>
+      <div className="empty-title">{title}</div>
+      {children && <div style={{ fontSize: '0.82em', maxWidth: 380 }}>{children}</div>}
+    </div>
+  );
+}
+
+/* Ornamental section divider */
+export function Orn({ label }: { label?: string }) {
+  return <div className="divider-orn"><span>{label ? `✦ ${label} ✦` : '✦'}</span></div>;
+}
+
+export function Window({ title, sub, onClose, children, w = 'min(1100px, 96vw)', h = 'min(720px, 92vh)', icon }: any) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center anim-fade" style={{ background: 'rgba(0,0,0,0.55)' }} onMouseDown={(e) => { if (e.target === e.currentTarget && onClose) onClose(); }}>
-      <div data-modal="1" className="panel win flex flex-col overflow-hidden" style={{ width: w, height: h }}>
-        <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
-          <div className="title text-xl">{icon} {title}</div>
+      <div data-modal="1" className="panel win flex flex-col overflow-hidden" style={{ width: w, height: h }} role="dialog" aria-label={typeof title === 'string' ? title : undefined}>
+        <div className="win-head flex items-center justify-between px-5 py-3">
+          <div className="flex items-baseline gap-3 min-w-0">
+            <div className="title text-xl truncate">{icon} {title}</div>
+            {sub && <div className="dim hidden sm:block" style={{ fontSize: '0.78em' }}>{sub}</div>}
+          </div>
           {onClose && <Btn className="sm" onClick={() => { sfx('close'); onClose(); }}>✕ <span className="dim">Close</span></Btn>}
         </div>
         <div className="flex-1 min-h-0 overflow-auto">{children}</div>
@@ -30,6 +59,7 @@ export function Window({ title, onClose, children, w = 'min(1100px, 96vw)', h = 
     </div>
   );
 }
+
 export const ICON_BY_KIND: Record<string, string> = { sword: '🗡️', greatsword: '⚔️', axe: '🪓', hammer: '🔨', dagger: '🔪', bow: '🏹', staff: '🪄', shield: '🛡️' };
 export function iconOf(id: string) {
   const it = ITEMS[id]; if (!it) return '❔';
@@ -44,7 +74,17 @@ export function iconOf(id: string) {
 export const rcol = (r: string) => RARITY_COLOR[r];
 export function ItemTip({ id }: { id: string }) {
   const it = ITEMS[id]; if (!it) return null; const stats: string[] = []; if (it.atk) stats.push(`Attack ${it.atk}`); if (it.mag) stats.push(`Magic ${it.mag}`); if (it.def) stats.push(`Defence ${it.def}`); if (it.hp) stats.push(`+${it.hp} Health`); if (it.mana) stats.push(`+${it.mana} Mana`); if (it.speed) stats.push(`+${Math.round(it.speed * 100)}% Speed`); if (it.bound) stats.push(`Bound magic: ${it.bound}`);
-  return <div><div className={`r-${it.rarity}`} style={{ fontWeight: 700, border: 'none', boxShadow: 'none', animation: 'none' }}>{it.name}</div><div className="dim" style={{ fontSize: '0.8em' }}>{it.rarity} {it.kind || it.slot || it.type}</div>{stats.map((s) => <div key={s}>{s}</div>)}<div className="dim" style={{ marginTop: 4 }}>{it.desc}</div>{it.req?.lvl && <div style={{ color: S.p.level >= it.req.lvl ? 'var(--good)' : 'var(--bad)' }}>Requires level {it.req.lvl}</div>}<div className="dim" style={{ marginTop: 4 }}>Value {it.value}g · Weight {it.weight}</div></div>;
+  return (
+    <div>
+      <div className={`r-${it.rarity}`} style={{ fontWeight: 700, border: 'none', boxShadow: 'none', animation: 'none', fontSize: '1.05em' }}>{it.name}</div>
+      <div className="dim" style={{ fontSize: '0.8em', textTransform: 'capitalize' }}>{it.rarity} · {it.kind || it.slot || it.type}</div>
+      {stats.length > 0 && <div className="divider-orn" style={{ margin: '0.3em 0' }}><span>✦</span></div>}
+      {stats.map((s) => <div key={s} style={{ color: 'var(--text)' }}>{s}</div>)}
+      <div className="dim" style={{ marginTop: 4, fontStyle: 'italic' }}>{it.desc}</div>
+      {it.req?.lvl && <div style={{ color: S.p.level >= it.req.lvl ? 'var(--good)' : 'var(--bad)' }}>Requires level {it.req.lvl}</div>}
+      <div className="faint" style={{ marginTop: 4, fontSize: '0.85em' }}>Value {it.value}g · Weight {it.weight}</div>
+    </div>
+  );
 }
 // global tooltip host
 let setTipFn: ((t: any) => void) | null = null;
